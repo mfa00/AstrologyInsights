@@ -34,7 +34,7 @@ export default function CategoryPage() {
               <Link href="/">
                 <Button variant="outline" size="sm" className="mb-8 elegant-shadow">
                   <ArrowLeft className="mr-2 w-4 h-4" />
-                  მთავარი გვერდი
+                  უკან დაბრუნება
                 </Button>
               </Link>
               
@@ -87,7 +87,7 @@ export default function CategoryPage() {
                     <p className="sky-text text-lg mb-10 leading-relaxed">ამ კატეგორიაში ჯერ არ არის დამატებული სტატიები.</p>
                     <Link href="/">
                       <Button size="lg" className="bg-gradient-to-r from-sky-blue to-deep-sky text-white elegant-shadow">
-                        მთავარ გვერდზე დაბრუნება
+                        უკან დაბრუნება
                       </Button>
                     </Link>
                   </div>

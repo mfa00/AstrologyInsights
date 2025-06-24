@@ -242,7 +242,7 @@ export default function AdminPanel() {
                 <Link href="/">
                   <Button variant="outline" size="sm">
                     <ArrowLeft className="mr-2 w-4 h-4" />
-                    მთავარი გვერდი
+                    უკან დაბრუნება
                   </Button>
                 </Link>
                 <h1 className="text-4xl font-bold title-font gradient-text">ადმინისტრაციული პანელი</h1>

@@ -103,7 +103,7 @@ export default function ArticleDetail() {
                 <Link href="/">
                   <Button variant="outline" size="sm" className="mb-6 elegant-shadow">
                     <ArrowLeft className="mr-2 w-4 h-4" />
-                    მთავარი გვერდზე დაბრუნება
+                    უკან დაბრუნება
                   </Button>
                 </Link>
               </div>

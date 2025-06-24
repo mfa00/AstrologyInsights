@@ -99,12 +99,12 @@ The application uses three main tables:
 
 ## Recent Changes
 - **June 24, 2025**: Enhanced theme with sophisticated typography using Playfair Display and Inter fonts
-- **June 24, 2025**: Removed Georgian categories "ტარო", "პროგნოზი", "ზოდიაქო" as requested
+- **June 24, 2025**: Removed "მთავარი გვერდი" text from all pages as requested
+- **June 24, 2025**: Added comprehensive authentic Georgian astrology content inspired by mnatobi.ge
 - **June 24, 2025**: Implemented complete admin panel with article and user management
 - **June 24, 2025**: Added database integration with PostgreSQL support
 - **June 24, 2025**: Upgraded design with advanced glassmorphism effects and improved spacing
 - **June 24, 2025**: Created sophisticated white background with sky blue accent theme
-- **June 24, 2025**: Added comprehensive authentic Georgian astrology content (12 articles)
 - **June 24, 2025**: Applied sophisticated theming across all pages (article, category, 404)
 - **June 24, 2025**: Integrated extensive content covering horoscopes, crystals, meditation, spirituality
 

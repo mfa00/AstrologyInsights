@@ -25,7 +25,7 @@ export default function NotFound() {
               <Link href="/">
                 <Button size="lg" className="bg-gradient-to-r from-sky-blue to-deep-sky text-pure-white elegant-shadow px-8 py-4">
                   <Home className="mr-3 w-5 h-5" />
-                  მთავარი გვერდი
+                  მთავარი
                 </Button>
               </Link>
               <Button 
