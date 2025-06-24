@@ -140,15 +140,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       throw new NotFoundError("Article not found");
     }
 
-    // Update view count first
-    await storage.updateArticleViews(id);
+    // Update view count with session tracking
+    const sessionId = req.sessionID; // Use sessionID instead of session.id
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    const userAgent = req.get('User-Agent') || 'unknown';
+    
+    console.log(`📊 Article ${id} accessed by session: ${sessionId}, IP: ${ipAddress}`);
+    console.log(`🔍 Session object:`, { 
+      sessionID: req.sessionID, 
+      session: req.session, 
+      cookie: req.session?.cookie 
+    });
+    
+    const viewCounted = await storage.updateArticleViews(id, sessionId, ipAddress, userAgent);
     
     // Get article with updated view count
     const article = await storage.getArticle(id);
     
     res.json({
       success: true,
-      data: article
+      data: article,
+      viewCounted // Include whether view was counted for debugging
     });
   }));
 

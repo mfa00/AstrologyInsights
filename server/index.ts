@@ -1,4 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
+import { v4 as uuidv4 } from 'uuid';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { testDatabaseConnection } from "./db";
@@ -23,6 +25,21 @@ app.use(corsMiddleware);
 app.use(securityHeaders);
 app.use(requestLogger);
 app.use(rateLimit());
+
+// Session middleware for view tracking
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'astrology-insights-session-key-2024',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true
+  },
+  genid: () => {
+    return uuidv4(); // Generate unique session IDs
+  }
+}));
 
 // Body parsing middleware
 app.use(express.json());

@@ -44,6 +44,26 @@ export class DatabaseStorage implements IStorage {
     console.log('🔄 Initializing database...');
     
     try {
+      // Check if article_views table exists, create if not
+      try {
+        await db.select().from(articleViews).limit(1);
+        console.log('✅ Article views table exists');
+      } catch (error) {
+        console.log('📊 Creating article_views table...');
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS "article_views" (
+            "id" serial PRIMARY KEY NOT NULL,
+            "article_id" integer NOT NULL,
+            "session_id" text NOT NULL,
+            "ip_address" text,
+            "user_agent" text,
+            "viewed_at" timestamp DEFAULT now() NOT NULL,
+            CONSTRAINT "article_views_article_id_session_id_unique" UNIQUE("article_id","session_id")
+          )
+        `);
+        console.log('✅ Article views table created');
+      }
+
       // Check if tables exist by querying categories (one of our main tables)
       const existingCategories = await db.select().from(categories).limit(1);
       

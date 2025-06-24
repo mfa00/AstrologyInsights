@@ -1,5 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ArrowLeft, Calendar, User, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +18,35 @@ export default function ArticleDetail() {
   const queryClient = useQueryClient();
   const articleId = parseInt(params.id || "0");
 
-  const { data: articleResponse, isLoading, error } = useQuery<{success: boolean, data: Article}>({
+  const { data: articleResponse, isLoading, error } = useQuery<{success: boolean, data: Article, viewCounted?: boolean}>({
     queryKey: [`/api/articles/${articleId}`],
     enabled: !isNaN(articleId) && articleId > 0,
   });
 
   const article = articleResponse?.data;
+
+  // Client-side view tracking as backup
+  useEffect(() => {
+    if (article && articleId) {
+      const viewKey = `article_${articleId}_viewed`;
+      const lastViewed = localStorage.getItem(viewKey);
+      const now = Date.now();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+
+      // Only log for debugging if not viewed in last 24 hours
+      if (!lastViewed || (now - parseInt(lastViewed)) > twentyFourHours) {
+        console.log(`🔍 Client-side: Article ${articleId} viewed for first time in 24h`);
+        localStorage.setItem(viewKey, now.toString());
+      } else {
+        console.log(`🔍 Client-side: Article ${articleId} already viewed recently`);
+      }
+
+      // Log server response about view counting
+      if (articleResponse?.viewCounted !== undefined) {
+        console.log(`📊 Server view counting result: ${articleResponse.viewCounted ? 'NEW VIEW' : 'DUPLICATE VIEW'}`);
+      }
+    }
+  }, [article, articleId, articleResponse]);
 
   const likeMutation = useMutation({
     mutationFn: async () => {
