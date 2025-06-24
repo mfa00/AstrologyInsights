@@ -1,0 +1,41 @@
+[Unit]
+Description=Astrology Insights Node.js Application
+Documentation=https://github.com/your-repo/astrologyinsights
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=astrologyinsights
+Group=www-data
+WorkingDirectory=/var/www/astrologyinsights
+Environment=NODE_ENV=production
+Environment=PORT=5000
+EnvironmentFile=/var/www/astrologyinsights/.env
+ExecStart=/usr/bin/node --loader tsx server/index.ts
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutStopSec=30s
+Restart=always
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=astrologyinsights
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/astrologyinsights/logs
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target 
