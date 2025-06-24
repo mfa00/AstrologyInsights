@@ -24,9 +24,9 @@ export default function ZodiacSelector() {
   const selectedZodiac = zodiacSigns.find(sign => sign.en === selectedSign);
 
   return (
-    <Card className="article-card bg-gradient-to-br from-deep-space/60 to-mystic-purple/40">
+    <Card className="article-card">
       <CardHeader>
-        <CardTitle className="text-xl font-bold celestial-gold flex items-center">
+        <CardTitle className="text-xl font-bold sky-blue flex items-center">
           <Star className="mr-2 w-5 h-5" />
           დღევანდელი ჰოროსკოპი
         </CardTitle>
@@ -40,18 +40,18 @@ export default function ZodiacSelector() {
               variant="ghost"
               size="icon"
               onClick={() => setSelectedSign(sign.en)}
-              className={`aspect-square bg-midnight-blue/50 hover:bg-celestial-gold/20 transition-colors ${
-                selectedSign === sign.en ? "bg-celestial-gold/20 border border-celestial-gold" : ""
+              className={`aspect-square bg-soft-gray hover:bg-sky-blue/20 transition-colors ${
+                selectedSign === sign.en ? "bg-sky-blue/20 border border-sky-blue" : ""
               }`}
               title={sign.ka}
             >
-              <span className="celestial-gold text-lg">{sign.symbol}</span>
+              <span className="sky-blue text-lg">{sign.symbol}</span>
             </Button>
           ))}
         </div>
         
         {/* Horoscope content */}
-        <div className="bg-midnight-blue/30 p-4 rounded-lg">
+        <div className="bg-soft-gray p-4 rounded-lg">
           {isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-6 w-20" />
@@ -60,15 +60,15 @@ export default function ZodiacSelector() {
             </div>
           ) : horoscope ? (
             <>
-              <h5 className="celestial-gold font-semibold mb-2 flex items-center">
+              <h5 className="sky-blue font-semibold mb-2 flex items-center">
                 {horoscope.zodiacSignGeorgian} {selectedZodiac?.symbol}
               </h5>
-              <p className="lavender text-sm leading-relaxed">
+              <p className="sky-text text-sm leading-relaxed">
                 {horoscope.content}
               </p>
             </>
           ) : (
-            <div className="text-center lavender">
+            <div className="text-center sky-text">
               <p className="text-sm">ჰოროსკოპი ხელმიუწვდომელია</p>
             </div>
           )}

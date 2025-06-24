@@ -12,9 +12,9 @@ export default function PopularArticles() {
   });
 
   return (
-    <Card className="article-card bg-gradient-to-br from-deep-space/60 to-mystic-purple/40">
+    <Card className="article-card">
       <CardHeader>
-        <CardTitle className="text-xl font-bold celestial-gold flex items-center">
+        <CardTitle className="text-xl font-bold sky-blue flex items-center">
           <Flame className="mr-2 w-5 h-5" />
           პოპულარული
         </CardTitle>
@@ -36,16 +36,16 @@ export default function PopularArticles() {
           <div className="space-y-4">
             {articles.map((article, index) => (
               <div key={article.id} className="flex items-center space-x-3">
-                <span className="celestial-gold font-bold text-lg w-6 text-center">
+                <span className="sky-blue font-bold text-lg w-6 text-center">
                   {index + 1}
                 </span>
                 <div className="flex-1">
                   <Link href={`/article/${article.id}`}>
-                    <h6 className="star-white text-sm font-semibold leading-tight hover:celestial-gold transition-colors cursor-pointer line-clamp-2">
+                    <h6 className="dark-text text-sm font-semibold leading-tight hover:sky-blue transition-colors cursor-pointer line-clamp-2">
                       {article.title}
                     </h6>
                   </Link>
-                  <p className="lavender text-xs">
+                  <p className="sky-text text-xs">
                     {formatViews(article.views || 0)} ნახვა
                   </p>
                 </div>
@@ -53,7 +53,7 @@ export default function PopularArticles() {
             ))}
           </div>
         ) : (
-          <div className="text-center lavender">
+          <div className="text-center sky-text">
             <p className="text-sm">პოპულარული სტატიები ვერ მოიძებნა</p>
           </div>
         )}

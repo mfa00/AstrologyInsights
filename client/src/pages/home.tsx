@@ -33,7 +33,7 @@ export default function Home() {
       <Header />
       
       {/* Hero Section */}
-      <section className="pt-20 pb-16 mystical-bg">
+      <section className="pt-20 pb-16 sky-bg">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-4xl mx-auto">
             <div className="mb-8">
@@ -47,19 +47,19 @@ export default function Home() {
             <h2 className="text-5xl md:text-7xl font-bold mb-6 gradient-text">
               ასტროლოგიის სამყარო
             </h2>
-            <p className="text-xl md:text-2xl lavender mb-8 leading-relaxed">
+            <p className="text-xl md:text-2xl sky-text mb-8 leading-relaxed">
               აღმოაჩინე ვარსკვლავების საიდუმლოებები და შენი ზოდიაქოს ნიშნის ეზოთერული ბუნება
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/category/horoscope">
-                <Button className="bg-gradient-to-r from-celestial-gold to-stardust-gold text-cosmic-black hover:shadow-lg transition-all duration-300">
+                <Button className="bg-gradient-to-r from-sky-blue to-deep-sky text-pure-white hover:shadow-lg transition-all duration-300">
                   <Star className="mr-2 w-4 h-4" />
                   დღევანდელი ჰოროსკოპი
                 </Button>
               </Link>
               <Link href="/category/zodiac">
-                <Button variant="outline" className="border-2 border-celestial-gold text-celestial-gold hover:bg-celestial-gold hover:text-cosmic-black transition-all duration-300">
+                <Button variant="outline" className="border-2 border-sky-blue text-sky-blue hover:bg-sky-blue hover:text-pure-white transition-all duration-300">
                   <Moon className="mr-2 w-4 h-4" />
                   ზოდიაქოს რუკა
                 </Button>
@@ -70,15 +70,15 @@ export default function Home() {
       </section>
 
       {/* Main Content */}
-      <main className="py-16 bg-cosmic-black">
+      <main className="py-16 bg-pure-white">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-3 gap-12">
             
             {/* Articles Section */}
             <div className="lg:col-span-2">
               <div className="mb-12">
-                <h3 className="text-3xl font-bold celestial-gold mb-2">განსაკუთრებული სტატიები</h3>
-                <div className="w-20 h-1 bg-gradient-to-r from-celestial-gold to-stardust-gold rounded-full"></div>
+                <h3 className="text-3xl font-bold sky-blue mb-2">განსაკუთრებული სტატიები</h3>
+                <div className="w-20 h-1 bg-gradient-to-r from-sky-blue to-deep-sky rounded-full"></div>
               </div>
               
               {/* Featured Article */}
@@ -131,7 +131,7 @@ export default function Home() {
                   <div className="text-center">
                     <Button 
                       onClick={loadMoreArticles}
-                      className="bg-gradient-to-r from-celestial-gold to-stardust-gold text-cosmic-black hover:shadow-lg transition-all duration-300"
+                      className="bg-gradient-to-r from-sky-blue to-deep-sky text-pure-white hover:shadow-lg transition-all duration-300"
                     >
                       <ChevronDown className="mr-2 w-4 h-4" />
                       მეტის ნახვა
@@ -139,7 +139,7 @@ export default function Home() {
                   </div>
                 </>
               ) : (
-                <div className="text-center lavender py-12">
+                <div className="text-center sky-text py-12">
                   <p>სტატიები ვერ მოიძებნა</p>
                 </div>
               )}

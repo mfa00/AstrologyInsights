@@ -27,7 +27,7 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-deep-space/95 backdrop-blur-sm border-b border-celestial-gold/20">
+    <header className="fixed top-0 w-full z-50 bg-pure-white/95 backdrop-blur-sm border-b border-sky-blue/20 shadow-sm">
       <div className="container mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
           {/* Logo */}
@@ -35,9 +35,9 @@ export default function Header() {
             <img 
               src="https://mnatobi.ge/wp-content/uploads/2022/10/1.jpg" 
               alt="მნათობი - ასტროლოგია" 
-              className="w-10 h-10 rounded-full star-glow"
+              className="w-10 h-10 rounded-full sky-glow"
             />
-            <h1 className="text-2xl font-bold celestial-gold">მნათობი</h1>
+            <h1 className="text-2xl font-bold sky-blue">მნათობი</h1>
           </Link>
           
           {/* Desktop Navigation */}
@@ -46,8 +46,8 @@ export default function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`transition-colors hover:celestial-gold ${
-                  location === item.href ? "celestial-gold" : "star-white"
+                className={`transition-colors hover:sky-blue ${
+                  location === item.href ? "sky-blue" : "dark-text"
                 }`}
               >
                 {item.name}
@@ -64,9 +64,9 @@ export default function Header() {
                 placeholder="ძებნა..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-midnight-blue/50 border-celestial-gold/30 text-star-white pl-10 focus:border-celestial-gold"
+                className="bg-soft-gray border-sky-blue/30 text-dark-text pl-10 focus:border-sky-blue"
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 celestial-gold w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 sky-blue w-4 h-4" />
             </form>
             
             {/* Mobile Menu */}
@@ -75,12 +75,12 @@ export default function Header() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="md:hidden celestial-gold hover:bg-celestial-gold/20"
+                  className="md:hidden sky-blue hover:bg-sky-blue/20"
                 >
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="bg-deep-space border-celestial-gold/20">
+              <SheetContent side="right" className="bg-pure-white border-sky-blue/20">
                 <div className="flex flex-col space-y-6 mt-6">
                   {/* Mobile Search */}
                   <form onSubmit={handleSearch} className="relative">
@@ -89,9 +89,9 @@ export default function Header() {
                       placeholder="ძებნა..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="bg-midnight-blue/50 border-celestial-gold/30 text-star-white pl-10"
+                      className="bg-soft-gray border-sky-blue/30 text-dark-text pl-10"
                     />
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 celestial-gold w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 sky-blue w-4 h-4" />
                   </form>
                   
                   {/* Mobile Navigation */}
@@ -100,8 +100,8 @@ export default function Header() {
                       key={item.name}
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`text-lg transition-colors hover:celestial-gold ${
-                        location === item.href ? "celestial-gold" : "star-white"
+                      className={`text-lg transition-colors hover:sky-blue ${
+                        location === item.href ? "sky-blue" : "dark-text"
                       }`}
                     >
                       {item.name}

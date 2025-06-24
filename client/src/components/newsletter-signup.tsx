@@ -45,15 +45,15 @@ export default function NewsletterSignup() {
   };
 
   return (
-    <Card className="article-card bg-gradient-to-br from-celestial-gold/10 to-stardust-gold/10 border-celestial-gold/30">
+    <Card className="article-card bg-gradient-to-br from-sky-blue/10 to-light-sky/20 border-sky-blue/30">
       <CardHeader>
-        <CardTitle className="text-xl font-bold celestial-gold flex items-center">
+        <CardTitle className="text-xl font-bold sky-blue flex items-center">
           <Mail className="mr-2 w-5 h-5" />
           ასტროლოგიური სიახლეები
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="lavender text-sm mb-4 leading-relaxed">
+        <p className="sky-text text-sm mb-4 leading-relaxed">
           მიიღეთ ყოველკვირეული ჰოროსკოპი და ასტროლოგიური რჩევები პირდაპირ თქვენს ემაილზე.
         </p>
         
@@ -63,12 +63,12 @@ export default function NewsletterSignup() {
             placeholder="თქვენი ემაილი"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-midnight-blue/50 border-celestial-gold/30 text-star-white focus:border-celestial-gold"
+            className="bg-soft-gray border-sky-blue/30 text-dark-text focus:border-sky-blue"
             required
           />
           <Button 
             type="submit" 
-            className="w-full bg-gradient-to-r from-celestial-gold to-stardust-gold text-cosmic-black hover:shadow-lg transition-all duration-300"
+            className="w-full bg-gradient-to-r from-sky-blue to-deep-sky text-pure-white hover:shadow-lg transition-all duration-300"
             disabled={mutation.isPending}
           >
             <Send className="mr-2 w-4 h-4" />

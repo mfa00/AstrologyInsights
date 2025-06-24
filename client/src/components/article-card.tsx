@@ -12,8 +12,8 @@ interface ArticleCardProps {
 
 export default function ArticleCard({ article, featured = false }: ArticleCardProps) {
   const cardClassName = featured 
-    ? "article-card rounded-2xl p-8 bg-gradient-to-br from-deep-space/50 to-mystic-purple/30"
-    : "article-card rounded-xl p-6 bg-gradient-to-br from-deep-space/40 to-midnight-blue/30";
+    ? "article-card rounded-2xl p-8"
+    : "article-card rounded-xl p-6";
 
   return (
     <Card className={cardClassName}>
@@ -30,45 +30,45 @@ export default function ArticleCard({ article, featured = false }: ArticleCardPr
         <div className={`flex items-center mb-${featured ? '4' : '3'}`}>
           <Badge 
             variant="secondary" 
-            className="bg-celestial-gold text-cosmic-black mr-3 font-semibold"
+            className="bg-sky-blue text-pure-white mr-3 font-semibold"
           >
             {article.category}
           </Badge>
-          <span className="lavender text-sm">{formatDate(article.publishedAt)}</span>
+          <span className="sky-text text-sm">{formatDate(article.publishedAt)}</span>
         </div>
         
         <Link href={`/article/${article.id}`}>
-          <h4 className={`${featured ? 'text-2xl' : 'text-lg'} font-bold star-white mb-${featured ? '4' : '3'} hover:celestial-gold transition-colors cursor-pointer leading-tight`}>
+          <h4 className={`${featured ? 'text-2xl' : 'text-lg'} font-bold dark-text mb-${featured ? '4' : '3'} hover:sky-blue transition-colors cursor-pointer leading-tight`}>
             {article.title}
           </h4>
         </Link>
         
-        <p className={`lavender leading-relaxed mb-${featured ? '6' : '4'} ${featured ? 'text-base' : 'text-sm'}`}>
+        <p className={`sky-text leading-relaxed mb-${featured ? '6' : '4'} ${featured ? 'text-base' : 'text-sm'}`}>
           {article.excerpt}
         </p>
         
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-celestial-gold to-stardust-gold rounded-full flex items-center justify-center text-cosmic-black font-bold text-sm">
+            <div className="w-10 h-10 bg-gradient-to-r from-sky-blue to-deep-sky rounded-full flex items-center justify-center text-pure-white font-bold text-sm">
               {article.author.charAt(0)}
             </div>
             <div>
-              <p className="star-white font-semibold text-sm">{article.author}</p>
-              <p className="lavender text-xs">{article.authorRole}</p>
+              <p className="dark-text font-semibold text-sm">{article.author}</p>
+              <p className="sky-text text-xs">{article.authorRole}</p>
             </div>
           </div>
           
           <div className="flex items-center space-x-4 text-xs">
-            <span className="lavender hover:celestial-gold transition-colors cursor-pointer flex items-center">
+            <span className="sky-text hover:sky-blue transition-colors cursor-pointer flex items-center">
               <Heart className="mr-1 w-3 h-3" />
               {article.likes}
             </span>
-            <span className="lavender hover:celestial-gold transition-colors cursor-pointer flex items-center">
+            <span className="sky-text hover:sky-blue transition-colors cursor-pointer flex items-center">
               <MessageCircle className="mr-1 w-3 h-3" />
               {article.comments}
             </span>
             {article.views && (
-              <span className="lavender flex items-center">
+              <span className="sky-text flex items-center">
                 <Eye className="mr-1 w-3 h-3" />
                 {formatViews(article.views)}
               </span>
