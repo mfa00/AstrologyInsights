@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(240, 23%, 6%);
+  --foreground: hsl(43, 14%, 95%);
+  --muted: hsl(240, 15%, 16%);
+  --muted-foreground: hsl(264, 18%, 67%);
+  --popover: hsl(240, 15%, 16%);
+  --popover-foreground: hsl(43, 14%, 95%);
+  --card: hsl(240, 23%, 6%);
+  --card-foreground: hsl(43, 14%, 95%);
+  --border: hsl(48, 100%, 42%);
+  --input: hsl(240, 15%, 16%);
+  --primary: hsl(48, 100%, 42%);
+  --primary-foreground: hsl(240, 23%, 6%);
+  --secondary: hsl(240, 15%, 16%);
+  --secondary-foreground: hsl(43, 14%, 95%);
+  --accent: hsl(240, 15%, 16%);
+  --accent-foreground: hsl(43, 14%, 95%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(43, 14%, 95%);
+  --ring: hsl(48, 100%, 42%);
+  --radius: 0.75rem;
+  
+  /* Custom celestial colors */
+  --cosmic-black: hsl(240, 23%, 6%);
+  --deep-space: hsl(231, 37%, 16%);
+  --midnight-blue: hsl(219, 35%, 28%);
+  --mystic-purple: hsl(261, 28%, 32%);
+  --lavender: hsl(271, 27%, 47%);
+  --celestial-gold: hsl(48, 100%, 42%);
+  --stardust-gold: hsl(48, 68%, 76%);
+  --star-white: hsl(43, 14%, 95%);
+}
+
+.dark {
+  --background: hsl(240, 23%, 6%);
+  --foreground: hsl(43, 14%, 95%);
+  --muted: hsl(240, 15%, 16%);
+  --muted-foreground: hsl(264, 18%, 67%);
+  --popover: hsl(240, 15%, 16%);
+  --popover-foreground: hsl(43, 14%, 95%);
+  --card: hsl(240, 23%, 6%);
+  --card-foreground: hsl(43, 14%, 95%);
+  --border: hsl(48, 100%, 42%);
+  --input: hsl(240, 15%, 16%);
+  --primary: hsl(48, 100%, 42%);
+  --primary-foreground: hsl(240, 23%, 6%);
+  --secondary: hsl(240, 15%, 16%);
+  --secondary-foreground: hsl(43, 14%, 95%);
+  --accent: hsl(240, 15%, 16%);
+  --accent-foreground: hsl(43, 14%, 95%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(43, 14%, 95%);
+  --ring: hsl(48, 100%, 42%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', 'Noto Sans Georgian', sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .mystical-bg {
+    background: radial-gradient(circle at 20% 50%, rgba(74, 59, 107, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(45, 58, 95, 0.1) 0%, transparent 50%),
+                hsl(240, 23%, 6%);
+  }
+  
+  .article-card {
+    background: linear-gradient(135deg, rgba(45, 58, 95, 0.1) 0%, rgba(74, 59, 107, 0.1) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    transition: all 0.3s ease;
+  }
+  
+  .article-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.2);
+  }
+  
+  .star-glow {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(48, 100%, 42%) 0%, hsl(48, 68%, 76%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@layer utilities {
+  .cosmic-black {
+    color: hsl(240, 23%, 6%);
+  }
+  
+  .bg-cosmic-black {
+    background-color: hsl(240, 23%, 6%);
+  }
+  
+  .deep-space {
+    color: hsl(231, 37%, 16%);
+  }
+  
+  .bg-deep-space {
+    background-color: hsl(231, 37%, 16%);
+  }
+  
+  .midnight-blue {
+    color: hsl(219, 35%, 28%);
+  }
+  
+  .bg-midnight-blue {
+    background-color: hsl(219, 35%, 28%);
+  }
+  
+  .mystic-purple {
+    color: hsl(261, 28%, 32%);
+  }
+  
+  .bg-mystic-purple {
+    background-color: hsl(261, 28%, 32%);
+  }
+  
+  .lavender {
+    color: hsl(271, 27%, 47%);
+  }
+  
+  .bg-lavender {
+    background-color: hsl(271, 27%, 47%);
+  }
+  
+  .celestial-gold {
+    color: hsl(48, 100%, 42%);
+  }
+  
+  .bg-celestial-gold {
+    background-color: hsl(48, 100%, 42%);
+  }
+  
+  .stardust-gold {
+    color: hsl(48, 68%, 76%);
+  }
+  
+  .bg-stardust-gold {
+    background-color: hsl(48, 68%, 76%);
+  }
+  
+  .star-white {
+    color: hsl(43, 14%, 95%);
+  }
+  
+  .bg-star-white {
+    background-color: hsl(43, 14%, 95%);
+  }
+}
