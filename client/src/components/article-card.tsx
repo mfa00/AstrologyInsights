@@ -38,7 +38,7 @@ export default function ArticleCard({ article, featured = false }: ArticleCardPr
         </div>
         
         <Link href={`/article/${article.id}`}>
-          <h4 className={`${featured ? 'text-2xl' : 'text-lg'} font-bold dark-text mb-${featured ? '4' : '3'} hover:sky-blue transition-colors cursor-pointer leading-tight`}>
+          <h4 className={`${featured ? 'text-2xl' : 'text-lg'} font-bold title-font dark-text mb-${featured ? '4' : '3'} hover:sky-blue transition-colors cursor-pointer leading-tight`}>
             {article.title}
           </h4>
         </Link>

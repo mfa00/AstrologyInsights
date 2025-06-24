@@ -37,7 +37,7 @@ export default function Footer() {
           
           {/* Categories */}
           <div>
-            <h6 className="dark-text font-semibold mb-4">კატეგორიები</h6>
+            <h6 className="dark-text title-font font-semibold mb-4">კატეგორიები</h6>
             <ul className="space-y-2 text-sm">
               {categories.map((category) => (
                 <li key={category.name}>
@@ -54,7 +54,7 @@ export default function Footer() {
           
           {/* Services */}
           <div>
-            <h6 className="dark-text font-semibold mb-4">სერვისები</h6>
+            <h6 className="dark-text title-font font-semibold mb-4">სერვისები</h6>
             <ul className="space-y-2 text-sm">
               {services.map((service) => (
                 <li key={service.name}>
@@ -71,7 +71,7 @@ export default function Footer() {
           
           {/* Social & Contact */}
           <div>
-            <h6 className="dark-text font-semibold mb-4">გამოგვყეთ</h6>
+            <h6 className="dark-text title-font font-semibold mb-4">გამოგვყეთ</h6>
             <div className="flex space-x-4 mb-4">
               <a href="#" className="sky-text hover:sky-blue transition-colors">
                 <Facebook className="w-5 h-5" />

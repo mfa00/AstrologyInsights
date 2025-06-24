@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import ArticleCard from "@/components/article-card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import type { Article, Category } from "@shared/schema";
 
 export default function CategoryPage() {
@@ -21,105 +22,80 @@ export default function CategoryPage() {
     enabled: !!categoryName,
   });
 
-  const getCategoryTitle = (name: string) => {
-    switch (name) {
-      case "horoscope": return "ჰოროსკოპი";
-      case "zodiac": return "ზოდიაქო";
-      case "tarot": return "ტარო";
-      case "crystals": return "კრისტალები";
-      case "moon-phases": return "მთვარის ფაზები";
-      case "predictions": return "პროგნოზები";
-      default: return name;
-    }
-  };
-
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen hero-bg">
       <Header />
       
-      {/* Category Header */}
-      <section className="pt-24 pb-12 mystical-bg">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto">
-            {categoryLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-12 w-48 mx-auto" />
-                <Skeleton className="h-4 w-64 mx-auto" />
-              </div>
-            ) : category ? (
-              <>
-                <Badge className="bg-celestial-gold text-cosmic-black font-semibold mb-4 text-lg px-4 py-2">
-                  {category.nameGeorgian}
-                </Badge>
-                <h1 className="text-4xl md:text-6xl font-bold gradient-text mb-4">
-                  {category.nameGeorgian}
+      <main className="pt-20">
+        {/* Hero Section */}
+        <section className="py-20 relative overflow-hidden">
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="max-w-5xl mx-auto text-center">
+              <Link href="/">
+                <Button variant="outline" size="sm" className="mb-8 elegant-shadow">
+                  <ArrowLeft className="mr-2 w-4 h-4" />
+                  მთავარი გვერდი
+                </Button>
+              </Link>
+              
+              {categoryLoading ? (
+                <Skeleton className="h-16 w-80 mx-auto mb-6" />
+              ) : category ? (
+                <>
+                  <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold title-font gradient-text mb-6 tracking-tight">
+                    {category.nameGeorgian}
+                  </h1>
+                  {category.description && (
+                    <p className="text-xl md:text-2xl sky-text leading-relaxed font-light max-w-3xl mx-auto">
+                      {category.description}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <h1 className="text-5xl md:text-7xl font-bold title-font gradient-text mb-6">
+                  კატეგორია ვერ მოიძებნა
                 </h1>
-                {category.description && (
-                  <p className="text-lg lavender leading-relaxed">
-                    {category.description}
-                  </p>
-                )}
-              </>
-            ) : (
-              <>
-                <h1 className="text-4xl md:text-6xl font-bold gradient-text mb-4">
-                  {getCategoryTitle(categoryName)}
-                </h1>
-                <p className="text-lg lavender leading-relaxed">
-                  აღმოაჩინე {getCategoryTitle(categoryName)} კატეგორიის სტატიები
-                </p>
-              </>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Articles */}
-      <main className="py-16 bg-cosmic-black">
-        <div className="container mx-auto px-4">
-          {articlesLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="article-card rounded-xl p-6">
-                  <Skeleton className="w-full h-40 rounded-lg mb-4" />
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Skeleton className="h-4 w-16" />
-                      <Skeleton className="h-3 w-20" />
+        {/* Articles Section */}
+        <section className="py-20">
+          <div className="container mx-auto px-6">
+            <div className="max-w-7xl mx-auto">
+              {articlesLoading ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="space-y-6">
+                      <Skeleton className="h-64 w-full rounded-2xl" />
+                      <Skeleton className="h-8 w-3/4" />
+                      <Skeleton className="h-6 w-1/2" />
                     </div>
-                    <Skeleton className="h-6 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-2/3" />
+                  ))}
+                </div>
+              ) : articles && articles.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+                  {articles.map((article) => (
+                    <ArticleCard key={article.id} article={article} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-20">
+                  <div className="premium-card p-12 max-w-2xl mx-auto">
+                    <h3 className="text-3xl font-bold title-font sky-blue mb-6">სტატიები ვერ მოიძებნა</h3>
+                    <p className="sky-text text-lg mb-10 leading-relaxed">ამ კატეგორიაში ჯერ არ არის დამატებული სტატიები.</p>
+                    <Link href="/">
+                      <Button size="lg" className="bg-gradient-to-r from-sky-blue to-deep-sky text-white elegant-shadow">
+                        მთავარ გვერდზე დაბრუნება
+                      </Button>
+                    </Link>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          ) : articles && articles.length > 0 ? (
-            <>
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold star-white mb-2">
-                  სულ {articles.length} სტატია
-                </h2>
-                <div className="w-16 h-1 bg-gradient-to-r from-celestial-gold to-stardust-gold rounded-full"></div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {articles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-16">
-              <h2 className="text-2xl font-bold lavender mb-4">
-                სტატიები ვერ მოიძებნა
-              </h2>
-              <p className="lavender">
-                ამ კატეგორიაში სტატიები ჯერ არ არის დამატებული.
-              </p>
-            </div>
-          )}
-        </div>
+          </div>
+        </section>
       </main>
 
       <Footer />
