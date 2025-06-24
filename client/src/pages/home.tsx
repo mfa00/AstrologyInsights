@@ -16,13 +16,16 @@ export default function Home() {
   const [articlesOffset, setArticlesOffset] = useState(0);
   const articlesLimit = 6;
 
-  const { data: featuredArticles, isLoading: featuredLoading } = useQuery<Article[]>({
+  const { data: featuredResponse, isLoading: featuredLoading } = useQuery<{success: boolean, data: Article[]}>({
     queryKey: ["/api/articles?featured=true&limit=1"],
   });
 
-  const { data: articles, isLoading: articlesLoading } = useQuery<Article[]>({
+  const { data: articlesResponse, isLoading: articlesLoading } = useQuery<{success: boolean, data: Article[]}>({
     queryKey: [`/api/articles?limit=${articlesLimit}&offset=${articlesOffset}&featured=false`],
   });
+
+  const featuredArticles = featuredResponse?.data || [];
+  const articles = articlesResponse?.data || [];
 
   const loadMoreArticles = () => {
     setArticlesOffset(prev => prev + articlesLimit);
@@ -44,7 +47,7 @@ export default function Home() {
               />
             </div>
             
-            <h2 className="text-6xl md:text-8xl lg:text-9xl font-bold mb-8 gradient-text title-font tracking-tight leading-none">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-8 gradient-text title-font tracking-tight leading-none">
               ასტროლოგიის<br />სამყარო
             </h2>
             <p className="text-xl md:text-2xl lg:text-3xl sky-text mb-12 leading-relaxed font-light max-w-4xl mx-auto">
@@ -77,7 +80,7 @@ export default function Home() {
             {/* Articles Section */}
             <div className="lg:col-span-2">
               <div className="mb-16">
-                <h3 className="text-4xl md:text-5xl font-bold title-font gradient-text mb-4 tracking-tight">განსაკუთრებული სტატიები</h3>
+                <h3 className="text-xl md:text-2xl font-bold title-font gradient-text mb-4 tracking-tight">განსაკუთრებული სტატიები</h3>
                 <div className="w-24 h-1.5 bg-gradient-to-r from-sky-blue to-deep-sky rounded-full"></div>
                 <p className="text-lg sky-text mt-4 font-light">აღმოაჩინე ასტროლოგიის ღრმა სიბრძნე</p>
               </div>

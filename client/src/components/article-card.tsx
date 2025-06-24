@@ -67,12 +67,10 @@ export default function ArticleCard({ article, featured = false }: ArticleCardPr
               <MessageCircle className="mr-1 w-3 h-3" />
               {article.comments}
             </span>
-            {article.views && (
-              <span className="sky-text flex items-center">
-                <Eye className="mr-1 w-3 h-3" />
-                {formatViews(article.views)}
-              </span>
-            )}
+            <span className="sky-text flex items-center">
+              <Eye className="mr-1 w-3 h-3" />
+              {formatViews(article.views || 0)}
+            </span>
           </div>
         </div>
       </CardContent>

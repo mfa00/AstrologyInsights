@@ -2,46 +2,107 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import { 
+  authenticateToken, 
+  optionalAuth, 
+  requireAdmin, 
+  requireEditor,
+  generateToken,
+  authenticateUser 
+} from "./middleware/auth";
+import { 
+  asyncHandler, 
+  ValidationError, 
+  NotFoundError,
+  validateRequiredFields 
+} from "./middleware/errorHandler";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // ===== AUTHENTICATION ROUTES =====
+  
+  // Login endpoint
+  app.post("/api/auth/login", asyncHandler(async (req, res) => {
+    const { username, password } = req.body;
+    
+    validateRequiredFields(['username', 'password'], req.body);
+    
+    const user = authenticateUser(username, password);
+    if (!user) {
+      throw new ValidationError('Invalid username or password');
+    }
+    
+    const token = generateToken(user);
+    
+    res.json({
+      success: true,
+      data: {
+        user,
+        token,
+        expiresIn: '7d'
+      }
+    });
+  }));
+
+  // Get current user info
+  app.get("/api/auth/me", authenticateToken, asyncHandler(async (req, res) => {
+    res.json({
+      success: true,
+      data: { user: req.user }
+    });
+  }));
+
+  // Logout endpoint (client-side token removal)
+  app.post("/api/auth/logout", asyncHandler(async (req, res) => {
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  }));
+
+  // ===== ARTICLE ROUTES =====
+  
   // Get all articles with optional filters
-  app.get("/api/articles", async (req, res) => {
+  app.get("/api/articles", optionalAuth, asyncHandler(async (req, res) => {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const category = req.query.category as string;
+    const featured = req.query.featured === 'true' ? true : req.query.featured === 'false' ? false : undefined;
+    
+    const articles = await storage.getArticles(limit, offset, category, featured);
+    res.json({
+      success: true,
+      data: articles,
+      pagination: {
+        limit,
+        offset,
+        total: articles.length
+      }
+    });
+  }));
+
+  // Get popular articles (must be before /:id route)
+  app.get("/api/articles/popular", async (req, res) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      const offset = parseInt(req.query.offset as string) || 0;
-      const category = req.query.category as string;
-      const featured = req.query.featured === 'true' ? true : req.query.featured === 'false' ? false : undefined;
-      
-      const articles = await storage.getArticles(limit, offset, category, featured);
-      res.json(articles);
+      const limit = parseInt(req.query.limit as string) || 5;
+      const articles = await storage.getPopularArticles(limit);
+      res.json({
+        success: true,
+        data: articles
+      });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch articles" });
+      res.status(500).json({ 
+        success: false,
+        error: {
+          message: "Failed to fetch popular articles",
+          code: "INTERNAL_ERROR",
+          statusCode: 500
+        }
+      });
     }
   });
 
-  // Get single article by ID
-  app.get("/api/articles/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid article ID" });
-      }
-
-      const article = await storage.getArticle(id);
-      if (!article) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-
-      // Update view count
-      await storage.updateArticleViews(id);
-      
-      res.json(article);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch article" });
-    }
-  });
-
-  // Search articles
+  // Search articles (must be before /:id route)
   app.get("/api/articles/search/:query", async (req, res) => {
     try {
       const query = req.params.query;
@@ -50,22 +111,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const articles = await storage.searchArticles(query);
-      res.json(articles);
+      res.json({
+        success: true,
+        data: articles
+      });
     } catch (error) {
-      res.status(500).json({ message: "Failed to search articles" });
+      res.status(500).json({ 
+        success: false,
+        error: {
+          message: "Failed to search articles",
+          code: "INTERNAL_ERROR",
+          statusCode: 500
+        }
+      });
     }
   });
 
-  // Get popular articles
-  app.get("/api/articles/popular", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 5;
-      const articles = await storage.getPopularArticles(limit);
-      res.json(articles);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch popular articles" });
+  // Get single article by ID (must be after specific routes)
+  app.get("/api/articles/:id", optionalAuth, asyncHandler(async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      throw new ValidationError("Invalid article ID");
     }
-  });
+
+    // First check if article exists
+    const articleExists = await storage.getArticle(id);
+    if (!articleExists) {
+      throw new NotFoundError("Article not found");
+    }
+
+    // Update view count first
+    await storage.updateArticleViews(id);
+    
+    // Get article with updated view count
+    const article = await storage.getArticle(id);
+    
+    res.json({
+      success: true,
+      data: article
+    });
+  }));
 
   // Get all categories
   app.get("/api/categories", async (req, res) => {
@@ -90,6 +175,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(category);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch category" });
+    }
+  });
+
+  // Get all horoscopes
+  app.get("/api/horoscopes", async (req, res) => {
+    try {
+      const horoscopes = await storage.getAllHoroscopes();
+      res.json({
+        success: true,
+        data: horoscopes
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false,
+        error: {
+          message: "Failed to fetch horoscopes",
+          code: "INTERNAL_ERROR",
+          statusCode: 500
+        }
+      });
     }
   });
 
@@ -127,64 +232,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin routes
-  app.get("/api/admin/users", async (req, res) => {
-    try {
-      const users = await storage.getAllUsers();
-      res.json(users);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      res.status(500).json({ message: "Failed to fetch users" });
-    }
-  });
+  // ===== ADMIN ROUTES =====
+  
+  // Protected admin routes
+  app.get("/api/admin/users", authenticateToken, requireAdmin, asyncHandler(async (req, res) => {
+    const users = await storage.getAllUsers();
+    res.json({
+      success: true,
+      data: users
+    });
+  }));
 
-  app.post("/api/admin/users", async (req, res) => {
-    try {
-      const user = await storage.createUser(req.body);
-      res.status(201).json(user);
-    } catch (error) {
-      console.error("Error creating user:", error);
-      res.status(500).json({ message: "Failed to create user" });
-    }
-  });
+  app.get("/api/admin/statistics", authenticateToken, requireAdmin, asyncHandler(async (req, res) => {
+    const stats = await storage.getViewStatistics();
+    res.json({
+      success: true,
+      data: stats
+    });
+  }));
 
-  app.put("/api/articles/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid article ID" });
-      }
-      
-      const updatedArticle = await storage.updateArticle(id, req.body);
-      if (!updatedArticle) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      res.json(updatedArticle);
-    } catch (error) {
-      console.error("Error updating article:", error);
-      res.status(500).json({ message: "Failed to update article" });
-    }
-  });
+  app.post("/api/admin/initialize-views", authenticateToken, requireAdmin, asyncHandler(async (req, res) => {
+    await storage.initializeHistoricalViewCounts();
+    res.json({
+      success: true,
+      message: "Historical view counts initialized successfully"
+    });
+  }));
 
-  app.delete("/api/articles/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid article ID" });
-      }
-      
-      const deleted = await storage.deleteArticle(id);
-      if (!deleted) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      res.json({ message: "Article deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting article:", error);
-      res.status(500).json({ message: "Failed to delete article" });
+  app.post("/api/admin/users", authenticateToken, requireAdmin, asyncHandler(async (req, res) => {
+    validateRequiredFields(['username', 'email', 'role'], req.body);
+    
+    const user = await storage.createUser(req.body);
+    res.status(201).json({
+      success: true,
+      data: user
+    });
+  }));
+
+  // ===== ARTICLE MANAGEMENT ROUTES =====
+
+  // Create new article (editors and admins)
+  app.post("/api/articles", authenticateToken, requireEditor, asyncHandler(async (req, res) => {
+    validateRequiredFields(['title', 'content', 'category'], req.body);
+    
+    const articleData = {
+      ...req.body,
+      author: req.body.author || req.user.username,
+      authorRole: req.body.authorRole || req.user.role,
+      publishedAt: new Date()
+    };
+    
+    const article = await storage.createArticle(articleData);
+    res.status(201).json({
+      success: true,
+      data: article
+    });
+  }));
+
+  // Update article (editors and admins)
+  app.put("/api/articles/:id", authenticateToken, requireEditor, asyncHandler(async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      throw new ValidationError("Invalid article ID");
     }
-  });
+    
+    const updatedArticle = await storage.updateArticle(id, req.body);
+    if (!updatedArticle) {
+      throw new NotFoundError("Article not found");
+    }
+    
+    res.json({
+      success: true,
+      data: updatedArticle
+    });
+  }));
+
+  // Delete article (admin only)
+  app.delete("/api/articles/:id", authenticateToken, requireAdmin, asyncHandler(async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      throw new ValidationError("Invalid article ID");
+    }
+    
+    const deleted = await storage.deleteArticle(id);
+    if (!deleted) {
+      throw new NotFoundError("Article not found");
+    }
+    
+    res.json({
+      success: true,
+      message: "Article deleted successfully"
+    });
+  }));
 
   const httpServer = createServer(app);
   return httpServer;

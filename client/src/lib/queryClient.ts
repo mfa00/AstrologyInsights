@@ -7,15 +7,63 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Token management
+let authToken: string | null = null;
+let tokenInitialized = false;
+
+function initializeToken() {
+  if (!tokenInitialized && typeof window !== 'undefined') {
+    authToken = localStorage.getItem('admin_token');
+    tokenInitialized = true;
+  }
+}
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+  if (typeof window !== 'undefined') {
+    if (token) {
+      localStorage.setItem('admin_token', token);
+    } else {
+      localStorage.removeItem('admin_token');
+    }
+  }
+}
+
+export function getAuthToken(): string | null {
+  initializeToken();
+  return authToken;
+}
+
+export function isAuthenticated(): boolean {
+  initializeToken();
+  return !!authToken;
+}
+
+export function logout() {
+  setAuthToken(null);
+  // Clear any user data from storage
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('admin_user');
+  }
+}
+
 export async function apiRequest(
-  method: string,
   url: string,
-  data?: unknown | undefined,
+  options: RequestInit = {}
 ): Promise<Response> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  // Add auth token if available
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
   const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    ...options,
+    headers,
     credentials: "include",
   });
 
@@ -29,7 +77,15 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const headers: Record<string, string> = {};
+    
+    // Add auth token if available
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
     const res = await fetch(queryKey[0] as string, {
+      headers,
       credentials: "include",
     });
 

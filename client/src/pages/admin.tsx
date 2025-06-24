@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -11,11 +11,132 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { ArrowLeft, Plus, Edit, Trash2, Users, FileText, Settings, Save } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { apiRequest, isAuthenticated, setAuthToken, logout } from '@/lib/queryClient';
+import { ArrowLeft, Plus, Edit, Trash2, Users, FileText, Settings, Save, LogOut, Eye, EyeOff } from 'lucide-react';
+import { formatDate, formatViews } from '@/lib/utils';
 import type { Article, Category, InsertArticle } from '@shared/schema';
 import Header from '@/components/layout/header';
+
+// Login Component
+function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+  const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!credentials.username || !credentials.password) {
+      toast({
+        title: "შეცდომა",
+        description: "გთხოვთ შეავსოთ ყველა ველი",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const response = await apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials)
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.data?.token) {
+        setAuthToken(data.data.token);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('admin_user', JSON.stringify(data.data.user));
+        }
+        toast({
+          title: "წარმატება",
+          description: `კეთილი იყოს თქვენი მობრძანება, ${data.data.user.username}!`,
+        });
+        onLoginSuccess();
+      } else {
+        throw new Error(data.error?.message || 'Login failed');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast({
+        title: "შეცდომა",
+        description: error.message || "ავტორიზაცია ვერ მოხერხდა",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">ადმინისტრაციული პანელი</CardTitle>
+          <p className="text-sm text-muted-foreground text-center">
+            შედით თქვენი ანგარიშით
+          </p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">მომხმარებლის სახელი</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="admin"
+                value={credentials.username}
+                onChange={(e) => setCredentials(prev => ({ ...prev, username: e.target.value }))}
+                disabled={isLoading}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">პაროლი</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="admin123"
+                  value={credentials.password}
+                  onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
+                  disabled={isLoading}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "მუშავდება..." : "შესვლა"}
+            </Button>
+          </form>
+          
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm">
+            <p className="font-medium text-blue-900">ტესტის მონაცემები:</p>
+            <p className="text-blue-700">Admin: admin / admin123</p>
+            <p className="text-blue-700">Editor: editor / editor123</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function AdminPanel() {
   const { toast } = useToast();
@@ -23,21 +144,9 @@ export default function AdminPanel() {
   const [selectedTab, setSelectedTab] = useState('articles');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Queries
-  const { data: articles, isLoading: articlesLoading } = useQuery({
-    queryKey: ['/api/articles?limit=50'],
-  });
-
-  const { data: categories } = useQuery({
-    queryKey: ['/api/categories'],
-  });
-
-  const { data: users, isLoading: usersLoading } = useQuery({
-    queryKey: ['/api/admin/users'],
-  });
-
-  // Article form state
+  // Article form state - MUST be declared before any early returns
   const [articleForm, setArticleForm] = useState<Partial<InsertArticle>>({
     title: '',
     excerpt: '',
@@ -49,14 +158,40 @@ export default function AdminPanel() {
     featured: false
   });
 
-  // User form state
+  // User form state - MUST be declared before any early returns
   const [userForm, setUserForm] = useState({
     username: '',
     email: '',
     role: 'editor'
   });
 
-  // Mutations
+  // Get user info from localStorage (safe for SSR)
+  const userInfo = typeof window !== 'undefined' 
+    ? JSON.parse(localStorage.getItem('admin_user') || '{}')
+    : {};
+
+  // Check authentication on mount
+  useEffect(() => {
+    setIsLoggedIn(isAuthenticated());
+  }, []);
+
+  // Queries - Always call hooks, but disable them when not logged in
+  const { data: articles, isLoading: articlesLoading } = useQuery({
+    queryKey: ['/api/articles?limit=50'],
+    enabled: isLoggedIn,
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ['/api/categories'],
+    enabled: isLoggedIn,
+  });
+
+  const { data: users, isLoading: usersLoading } = useQuery({
+    queryKey: ['/api/admin/users'],
+    enabled: isLoggedIn,
+  });
+
+  // Mutations - MUST be declared before any early returns
   const createArticleMutation = useMutation({
     mutationFn: async (article: InsertArticle) => {
       return await apiRequest('/api/articles', {
@@ -73,7 +208,8 @@ export default function AdminPanel() {
         description: "სტატია შეიქმნა წარმატებით",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Create article error:', error);
       toast({
         title: "შეცდომა",
         description: "სტატიის შექმნა ვერ მოხერხდა",
@@ -98,7 +234,8 @@ export default function AdminPanel() {
         description: "სტატია განახლდა წარმატებით",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Update article error:', error);
       toast({
         title: "შეცდომა",
         description: "სტატიის განახლება ვერ მოხერხდა",
@@ -120,7 +257,8 @@ export default function AdminPanel() {
         description: "სტატია წაიშალა წარმატებით",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Delete article error:', error);
       toast({
         title: "შეცდომა",
         description: "სტატიის წაშლა ვერ მოხერხდა",
@@ -144,7 +282,8 @@ export default function AdminPanel() {
         description: "მომხმარებელი შეიქმნა წარმატებით",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Create user error:', error);
       toast({
         title: "შეცდომა",
         description: "მომხმარებლის შექმნა ვერ მოხერხდა",
@@ -152,6 +291,22 @@ export default function AdminPanel() {
       });
     }
   });
+
+  // Show login form if not authenticated - AFTER all hooks are called
+  if (!isLoggedIn) {
+    return <LoginForm onLoginSuccess={() => setIsLoggedIn(true)} />;
+  }
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    setIsLoggedIn(false);
+    queryClient.clear();
+    toast({
+      title: "გამოსვლა",
+      description: "თქვენ წარმატებით გამოხვედით სისტემიდან",
+    });
+  };
 
   const resetArticleForm = () => {
     setArticleForm({
@@ -176,7 +331,7 @@ export default function AdminPanel() {
       author: article.author,
       authorRole: article.authorRole,
       imageUrl: article.imageUrl,
-      featured: article.featured || false
+                              featured: Boolean(article.featured)
     });
     setIsCreateDialogOpen(true);
   };
@@ -191,27 +346,39 @@ export default function AdminPanel() {
       return;
     }
 
-    const articleData: InsertArticle = {
-      title: articleForm.title!,
-      excerpt: articleForm.excerpt || '',
-      content: articleForm.content!,
-      category: articleForm.category!,
-      author: articleForm.author || 'ადმინი',
-      authorRole: articleForm.authorRole || 'რედაქტორი',
-      imageUrl: articleForm.imageUrl || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400',
-      featured: articleForm.featured,
-      publishedAt: new Date()
-    };
-
     if (editingArticle) {
-      updateArticleMutation.mutate({ id: editingArticle.id, article: articleData });
+      // For updates, exclude publishedAt to preserve original publication date
+      const updateData = {
+        title: articleForm.title!,
+        excerpt: articleForm.excerpt || '',
+        content: articleForm.content!,
+        category: articleForm.category!,
+        author: articleForm.author || userInfo.username || 'ადმინი',
+        authorRole: articleForm.authorRole || userInfo.role || 'რედაქტორი',
+        imageUrl: articleForm.imageUrl || '',
+        featured: !!articleForm.featured || false
+      };
+      console.log('📝 Updating article:', editingArticle.id, updateData);
+      updateArticleMutation.mutate({ id: editingArticle.id, article: updateData });
     } else {
+      // For new articles, include publishedAt
+      const articleData: InsertArticle = {
+        title: articleForm.title!,
+        excerpt: articleForm.excerpt || '',
+        content: articleForm.content!,
+        category: articleForm.category!,
+        author: articleForm.author || userInfo.username || 'ადმინი',
+        authorRole: articleForm.authorRole || userInfo.role || 'რედაქტორი',
+        imageUrl: articleForm.imageUrl || '',
+        publishedAt: new Date(),
+        featured: !!articleForm.featured || false
+      };
       createArticleMutation.mutate(articleData);
     }
   };
 
   const handleDeleteArticle = (id: number) => {
-    if (confirm('დარწმუნებული ხართ, რომ გსურთ ამ სტატიის წაშლა?')) {
+    if (confirm('დარწმუნებული ხართ რომ გსურთ ამ სტატიის წაშლა?')) {
       deleteArticleMutation.mutate(id);
     }
   };
@@ -230,42 +397,73 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="pt-20 pb-12">
-        <div className="container mx-auto px-6">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <Link href="/">
-                  <Button variant="outline" size="sm">
-                    <ArrowLeft className="mr-2 w-4 h-4" />
-                    უკან დაბრუნება
-                  </Button>
-                </Link>
-                <h1 className="text-4xl font-bold title-font gradient-text">ადმინისტრაციული პანელი</h1>
+      {/* Admin Header */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <Link href="/">
+                <Button variant="ghost" size="sm">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  მთავარ გვერდზე
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">ადმინისტრაციული პანელი</h1>
+                <p className="text-sm text-gray-600">
+                  კეთილი იყოს თქვენი მობრძანება, {userInfo.username} ({userInfo.role})
+                </p>
               </div>
-              
+            </div>
+            <Button onClick={handleLogout} variant="outline" size="sm">
+              <LogOut className="h-4 w-4 mr-2" />
+              გამოსვლა
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="articles" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              სტატიები
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              მომხმარებლები
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              პარამეტრები
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Articles Tab */}
+          <TabsContent value="articles" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">სტატიების მართვა</h2>
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-sky-blue hover:bg-deep-sky text-white">
-                    <Plus className="mr-2 w-4 h-4" />
+                  <Button onClick={() => { resetArticleForm(); setEditingArticle(null); }}>
+                    <Plus className="h-4 w-4 mr-2" />
                     ახალი სტატია
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle className="text-2xl title-font">
+                    <DialogTitle>
                       {editingArticle ? 'სტატიის რედაქტირება' : 'ახალი სტატიის შექმნა'}
                     </DialogTitle>
                   </DialogHeader>
-                  
-                  <div className="grid gap-6 py-4">
+                  <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="title">სათაური*</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="title">სათაური *</Label>
                         <Input
                           id="title"
                           value={articleForm.title}
@@ -273,9 +471,9 @@ export default function AdminPanel() {
                           placeholder="სტატიის სათაური"
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="category">კატეგორია*</Label>
-                        <Select 
+                      <div className="space-y-2">
+                        <Label htmlFor="category">კატეგორია *</Label>
+                        <Select
                           value={articleForm.category}
                           onValueChange={(value) => setArticleForm(prev => ({ ...prev, category: value }))}
                         >
@@ -283,66 +481,66 @@ export default function AdminPanel() {
                             <SelectValue placeholder="აირჩიეთ კატეგორია" />
                           </SelectTrigger>
                           <SelectContent>
-                            {categories?.map((cat: Category) => (
-                              <SelectItem key={cat.name} value={cat.name}>
+                            {categories && Array.isArray(categories) ? categories.map((cat: Category) => (
+                              <SelectItem key={cat.id} value={cat.name}>
                                 {cat.nameGeorgian}
                               </SelectItem>
-                            ))}
+                            )) : null}
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                     
-                    <div>
-                      <Label htmlFor="excerpt">მოკლე აღწერა</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="excerpt">შესავალი</Label>
                       <Textarea
                         id="excerpt"
                         value={articleForm.excerpt}
                         onChange={(e) => setArticleForm(prev => ({ ...prev, excerpt: e.target.value }))}
-                        placeholder="სტატიის მოკლე აღწერა..."
+                        placeholder="სტატიის მოკლე აღწერა"
                         rows={3}
                       />
                     </div>
                     
-                    <div>
-                      <Label htmlFor="content">შინაარსი*</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="content">შინაარსი *</Label>
                       <Textarea
                         id="content"
                         value={articleForm.content}
                         onChange={(e) => setArticleForm(prev => ({ ...prev, content: e.target.value }))}
-                        placeholder="სტატიის მთავარი შინაარსი..."
+                        placeholder="სტატიის მთლიანი შინაარსი"
                         rows={10}
                       />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="author">ავტორი</Label>
                         <Input
                           id="author"
                           value={articleForm.author}
                           onChange={(e) => setArticleForm(prev => ({ ...prev, author: e.target.value }))}
-                          placeholder="ავტორის სახელი"
+                          placeholder={userInfo.username || "ავტორის სახელი"}
                         />
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="authorRole">ავტორის როლი</Label>
                         <Input
                           id="authorRole"
                           value={articleForm.authorRole}
                           onChange={(e) => setArticleForm(prev => ({ ...prev, authorRole: e.target.value }))}
-                          placeholder="ასტროლოგი, რედაქტორი..."
+                          placeholder={userInfo.role || "რედაქტორი"}
                         />
                       </div>
                     </div>
                     
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="imageUrl">სურათის URL</Label>
                       <Input
                         id="imageUrl"
                         value={articleForm.imageUrl}
                         onChange={(e) => setArticleForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                        placeholder="https://..."
+                        placeholder="https://example.com/image.jpg"
                       />
                     </div>
                     
@@ -350,248 +548,189 @@ export default function AdminPanel() {
                       <input
                         type="checkbox"
                         id="featured"
-                        checked={articleForm.featured || false}
+                        checked={Boolean(articleForm.featured)}
                         onChange={(e) => setArticleForm(prev => ({ ...prev, featured: e.target.checked }))}
-                        className="w-4 h-4"
+                        className="rounded"
                       />
-                      <Label htmlFor="featured">განსაკუთრებული სტატია</Label>
+                      <Label htmlFor="featured">რჩეული სტატია</Label>
                     </div>
                   </div>
                   
                   <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => {
-                      setIsCreateDialogOpen(false);
-                      setEditingArticle(null);
-                      resetArticleForm();
-                    }}>
+                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                       გაუქმება
                     </Button>
-                    <Button 
-                      onClick={handleSubmitArticle}
-                      disabled={createArticleMutation.isPending || updateArticleMutation.isPending}
-                    >
-                      <Save className="mr-2 w-4 h-4" />
+                    <Button onClick={handleSubmitArticle}>
+                      <Save className="h-4 w-4 mr-2" />
                       {editingArticle ? 'განახლება' : 'შექმნა'}
                     </Button>
                   </div>
                 </DialogContent>
               </Dialog>
             </div>
-          </div>
 
-          {/* Tabs */}
-          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-            <TabsList className="grid w-full grid-cols-3 mb-8">
-              <TabsTrigger value="articles" className="flex items-center space-x-2">
-                <FileText className="w-4 h-4" />
-                <span>სტატიები</span>
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center space-x-2">
-                <Users className="w-4 h-4" />
-                <span>მომხმარებლები</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center space-x-2">
-                <Settings className="w-4 h-4" />
-                <span>პარამეტრები</span>
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Articles Tab */}
-            <TabsContent value="articles">
-              <Card className="premium-card">
-                <CardHeader>
-                  <CardTitle className="text-2xl title-font">სტატიების მართვა</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {articlesLoading ? (
-                    <div className="space-y-4">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="animate-pulse bg-gray-200 h-20 rounded"></div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {articles?.map((article: Article) => (
-                        <div key={article.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <h3 className="text-lg font-semibold text-gray-900">{article.title}</h3>
-                                {article.featured && (
-                                  <Badge variant="secondary" className="bg-sky-blue/10 text-sky-blue">
-                                    განსაკუთრებული
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-gray-600 text-sm mb-2">{article.excerpt}</p>
-                              <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                <span>ავტორი: {article.author}</span>
-                                <span>კატეგორია: {article.category}</span>
-                                <span>გამოქვეყნება: {formatDate(article.publishedAt)}</span>
-                                <span>{article.views} ნახვა</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditArticle(article)}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteArticle(article.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
+            {articlesLoading ? (
+              <div className="text-center py-8">მუშავდება...</div>
+            ) : (
+              <div className="grid gap-4">
+                                 {(articles as any)?.data?.map((article: Article) => (
+                  <Card key={article.id}>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold">{article.title}</h3>
+                            {article.featured && (
+                              <Badge variant="secondary">რჩეული</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{article.excerpt}</p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>ავტორი: {article.author}</span>
+                            <span>კატეგორია: {article.category}</span>
+                            <span>თარიღი: {formatDate(article.publishedAt)}</span>
+                            <span>ნახვები: {formatViews(article.views || 0)}</span>
+                            <span>ლაიქები: {formatViews(article.likes || 0)}</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Users Tab */}
-            <TabsContent value="users">
-              <div className="grid gap-6">
-                <Card className="premium-card">
-                  <CardHeader>
-                    <CardTitle className="text-2xl title-font">ახალი მომხმარებლის დამატება</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <Label htmlFor="username">მომხმარებლის სახელი</Label>
-                        <Input
-                          id="username"
-                          value={userForm.username}
-                          onChange={(e) => setUserForm(prev => ({ ...prev, username: e.target.value }))}
-                          placeholder="username"
-                        />
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditArticle(article)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteArticle(article.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="email">ემაილი</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={userForm.email}
-                          onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
-                          placeholder="user@example.com"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="role">როლი</Label>
-                        <Select value={userForm.role} onValueChange={(value) => setUserForm(prev => ({ ...prev, role: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">ადმინისტრატორი</SelectItem>
-                            <SelectItem value="editor">რედაქტორი</SelectItem>
-                            <SelectItem value="author">ავტორი</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={handleCreateUser}
-                      disabled={createUserMutation.isPending}
-                      className="bg-sky-blue hover:bg-deep-sky"
-                    >
-                      <Plus className="mr-2 w-4 h-4" />
-                      მომხმარებლის დამატება
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="premium-card">
-                  <CardHeader>
-                    <CardTitle className="text-2xl title-font">მომხმარებლების სია</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {usersLoading ? (
-                      <div className="space-y-4">
-                        {Array.from({ length: 3 }).map((_, i) => (
-                          <div key={i} className="animate-pulse bg-gray-200 h-16 rounded"></div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {users?.map((user: any) => (
-                          <div key={user.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h3 className="font-semibold text-gray-900">{user.username}</h3>
-                                <p className="text-gray-600 text-sm">{user.email}</p>
-                                <p className="text-gray-500 text-xs">შეიქმნა: {formatDate(user.createdAt)}</p>
-                              </div>
-                              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                                {user.role === 'admin' ? 'ადმინი' : user.role === 'editor' ? 'რედაქტორი' : 'ავტორი'}
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </TabsContent>
+            )}
+          </TabsContent>
 
-            {/* Settings Tab */}
-            <TabsContent value="settings">
-              <Card className="premium-card">
-                <CardHeader>
-                  <CardTitle className="text-2xl title-font">საიტის პარამეტრები</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">კატეგორიები</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {categories?.map((category: Category) => (
-                          <Badge key={category.name} variant="outline" className="justify-center py-2">
-                            {category.nameGeorgian}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">სტატისტიკა</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-sky-blue/10 rounded-lg p-4 text-center">
-                          <div className="text-2xl font-bold text-sky-blue">{articles?.length || 0}</div>
-                          <div className="text-sm text-gray-600">სტატია</div>
-                        </div>
-                        <div className="bg-green-100 rounded-lg p-4 text-center">
-                          <div className="text-2xl font-bold text-green-600">{users?.length || 0}</div>
-                          <div className="text-sm text-gray-600">მომხმარებელი</div>
-                        </div>
-                        <div className="bg-purple-100 rounded-lg p-4 text-center">
-                          <div className="text-2xl font-bold text-purple-600">{categories?.length || 0}</div>
-                          <div className="text-sm text-gray-600">კატეგორია</div>
-                        </div>
-                        <div className="bg-orange-100 rounded-lg p-4 text-center">
-                          <div className="text-2xl font-bold text-orange-600">
-                            {articles?.reduce((sum, article) => sum + (article.views || 0), 0) || 0}
-                          </div>
-                          <div className="text-sm text-gray-600">ნახვა</div>
-                        </div>
-                      </div>
-                    </div>
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">მომხმარებლების მართვა</h2>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>ახალი მომხმარებლის დამატება</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="username">მომხმარებლის სახელი *</Label>
+                    <Input
+                      id="username"
+                      value={userForm.username}
+                      onChange={(e) => setUserForm(prev => ({ ...prev, username: e.target.value }))}
+                      placeholder="მომხმარებლის სახელი"
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">იმეილი *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={userForm.email}
+                      onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="user@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="role">როლი</Label>
+                    <Select
+                      value={userForm.role}
+                      onValueChange={(value) => setUserForm(prev => ({ ...prev, role: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">ადმინი</SelectItem>
+                        <SelectItem value="editor">რედაქტორი</SelectItem>
+                        <SelectItem value="reader">მკითხველი</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button onClick={handleCreateUser} className="w-full">
+                      <Plus className="h-4 w-4 mr-2" />
+                      დამატება
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {usersLoading ? (
+              <div className="text-center py-8">მუშავდება...</div>
+            ) : (
+              <div className="grid gap-4">
+                {(users as any)?.data?.map((user: any) => (
+                  <Card key={user.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-semibold">{user.username}</h3>
+                          <p className="text-sm text-gray-600">{user.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={user.role === 'admin' ? 'destructive' : user.role === 'editor' ? 'default' : 'secondary'}>
+                            {user.role}
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {formatDate(user.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>სისტემის ინფორმაცია</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">სტატიების რაოდენობა:</span>
+                                         <span className="ml-2">{(articles as any)?.data?.length || 0}</span>
+                   </div>
+                   <div>
+                     <span className="font-medium">მომხმარებლების რაოდენობა:</span>
+                     <span className="ml-2">{(users as any)?.data?.length || 0}</span>
+                   </div>
+                   <div>
+                     <span className="font-medium">კატეგორიების რაოდენობა:</span>
+                     <span className="ml-2">{Array.isArray(categories) ? categories.length : 0}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">მიმდინარე მომხმარებელი:</span>
+                    <span className="ml-2">{userInfo.username} ({userInfo.role})</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

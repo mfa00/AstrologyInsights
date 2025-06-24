@@ -17,10 +17,12 @@ export default function ArticleDetail() {
   const queryClient = useQueryClient();
   const articleId = parseInt(params.id || "0");
 
-  const { data: article, isLoading, error } = useQuery<Article>({
+  const { data: articleResponse, isLoading, error } = useQuery<{success: boolean, data: Article}>({
     queryKey: [`/api/articles/${articleId}`],
     enabled: !isNaN(articleId) && articleId > 0,
   });
+
+  const article = articleResponse?.data;
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -66,8 +68,7 @@ export default function ArticleDetail() {
               <p className="sky-text text-lg mb-8">სტატია ვერ მოიძებნა</p>
               <Link href="/">
                 <Button className="bg-gradient-to-r from-sky-blue to-deep-sky text-white elegant-shadow">
-                  <ArrowLeft className="mr-2 w-4 h-4" />
-                  მთავარ გვერდზე დაბრუნება
+                  მთავარი გვერდი
                 </Button>
               </Link>
             </div>
@@ -98,15 +99,7 @@ export default function ArticleDetail() {
         ) : article ? (
           <article className="container mx-auto px-6 py-12">
             <div className="max-w-5xl mx-auto">
-              {/* Navigation */}
-              <div className="mb-12">
-                <Link href="/">
-                  <Button variant="outline" size="sm" className="mb-6 elegant-shadow">
-                    <ArrowLeft className="mr-2 w-4 h-4" />
-                    უკან დაბრუნება
-                  </Button>
-                </Link>
-              </div>
+
 
               {/* Article Header */}
               <header className="mb-12">

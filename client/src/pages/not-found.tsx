@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Home, ArrowLeft, Search } from "lucide-react";
+import { Home, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -28,15 +28,7 @@ export default function NotFound() {
                   მთავარი
                 </Button>
               </Link>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                onClick={() => window.history.back()}
-                className="border-sky-blue/30 hover:bg-sky-blue hover:text-white px-8 py-4"
-              >
-                <ArrowLeft className="mr-3 w-5 h-5" />
-                უკან დაბრუნება
-              </Button>
+
             </div>
             
             <div className="mt-12 pt-8 border-t border-sky-blue/20">

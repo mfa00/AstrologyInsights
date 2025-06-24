@@ -1,3 +1,5 @@
+import { eq, desc, like, or, sql, and } from 'drizzle-orm';
+import { db } from './db';
 import { articles, categories, horoscopes, type Article, type InsertArticle, type Category, type InsertCategory, type Horoscope, type InsertHoroscope } from "@shared/schema";
 
 export interface IStorage {
@@ -17,34 +19,44 @@ export interface IStorage {
   createCategory(category: InsertCategory): Promise<Category>;
   
   // Horoscopes
+  getAllHoroscopes(): Promise<Horoscope[]>;
   getDailyHoroscope(zodiacSign: string): Promise<Horoscope | undefined>;
   createHoroscope(horoscope: InsertHoroscope): Promise<Horoscope>;
   
   // Users (for admin)
   getAllUsers(): Promise<any[]>;
   createUser(user: { username: string; email: string; role: string }): Promise<any>;
+  
+  // Database management
+  initializeDatabase(): Promise<void>;
+  
+  // Analytics
+  getViewStatistics(): Promise<{ totalViews: number; totalLikes: number; totalArticles: number }>;
+  initializeHistoricalViewCounts(): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private articles: Map<number, Article>;
-  private categories: Map<string, Category>;
-  private horoscopes: Map<string, Horoscope>;
-  private currentArticleId: number;
-  private currentCategoryId: number;
-  private currentHoroscopeId: number;
-
-  constructor() {
-    this.articles = new Map();
-    this.categories = new Map();
-    this.horoscopes = new Map();
-    this.currentArticleId = 1;
-    this.currentCategoryId = 1;
-    this.currentHoroscopeId = 1;
+export class DatabaseStorage implements IStorage {
+  async initializeDatabase(): Promise<void> {
+    console.log('🔄 Initializing database...');
     
-    this.seedData();
+    try {
+      // Check if tables exist by querying categories (one of our main tables)
+      const existingCategories = await db.select().from(categories).limit(1);
+      
+      if (existingCategories.length === 0) {
+        console.log('📊 Seeding database with initial data...');
+        await this.seedData();
+      } else {
+        console.log('✅ Database already initialized');
+      }
+    } catch (error) {
+      console.log('📊 Database appears empty, seeding with initial data...');
+      await this.seedData();
+    }
   }
 
-  private seedData() {
+  private async seedData(): Promise<void> {
+    try {
     // Seed categories
     const categoryData: InsertCategory[] = [
       { name: "horoscope", nameGeorgian: "ჰოროსკოპი", description: "Daily and weekly horoscopes", color: "sky-blue" },
@@ -54,16 +66,12 @@ export class MemStorage implements IStorage {
       { name: "meditation", nameGeorgian: "მედიტაცია", description: "Meditation practices and mindfulness", color: "deep-sky" }
     ];
 
-    categoryData.forEach(cat => {
-      const category: Category = { 
-        ...cat, 
-        id: this.currentCategoryId++,
-        description: cat.description || null
-      };
-      this.categories.set(cat.name, category);
-    });
+      console.log('📂 Seeding categories...');
+      for (const cat of categoryData) {
+        await db.insert(categories).values(cat).onConflictDoNothing();
+      }
 
-    // Seed articles - comprehensive Georgian astrology content
+      // Seed articles
     const articleData: InsertArticle[] = [
       {
         title: "2024 წლის ასტროლოგიური პროგნოზი - ყველა ზოდიაქოს ნიშნისთვის",
@@ -119,242 +127,357 @@ export class MemStorage implements IStorage {
         imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
         publishedAt: new Date("2023-12-28"),
         featured: true
-      },
-      {
-        title: "ნატალური რუკის ანალიზი - თქვენი ციური იდენტობის აღმოჩენა",
-        excerpt: "ნატალური რუკა თქვენი სულის რუკაა, რომელიც გიჩვენებთ თქვენს ღრმა ბუნებას, ტალანტებს და ცხოვრებისეულ მისიას...",
-        content: "ნატალური რუკა დაბადების მომენტში ციური სხეულების პოზიციებს ასახავს და გიჩვენებთ თქვენს უნიკალურ ასტროლოგიურ ხასიათს. მზე გიჩვენებთ თქვენს ძირითად ნებას, მთვარე - ემოციურ ბუნებას, ხოლო ასცენდენტი - რას ხედავენ სხვები თქვენში. ყოველი პლანეტა განსაზღვრავს ცხოვრების კონკრეტულ ასპექტს.",
-        category: "horoscope",
-        author: "ნინო ასტროლოგი",
-        authorRole: "პროფესიონალი ასტროლოგი",
-        imageUrl: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
-        publishedAt: new Date("2023-12-15"),
-        featured: false
-      },
-      {
-        title: "ჩაკრების სისტემა და ენერგეტიკული ბალანსი",
-        excerpt: "ჩაკრები ენერგეტიკული ცენტრებია ჩვენს სხეულში, რომელთა ბალანსი მნიშვნელოვანია ფიზიკური და სულიერი ჯანმრთელობისთვის...",
-        content: "ჩაკრების სისტემა შედგება შვიდი ძირითადი ენერგეტიკული ცენტრისგან: ღრუბლის, საკრალური, მზისუნის, გულის, ყელის, შუბლის და გვერდის ჩაკრები. ყოველი ჩაკრა განსაზღვრავს კონკრეტულ ცხოვრებისეულ ასპექტს და საჭიროებს სპეციალურ ყურადღებას ბალანსის შესანარჩუნებლად.",
-        category: "spirituality",
-        author: "მაია ენერგოთერაპევტი",
-        authorRole: "ჩაკრების სპეციალისტი",
-        imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
-        publishedAt: new Date("2023-11-20"),
-        featured: false
-      },
-      {
-        title: "ეზოთერული პრაქტიკები და სულიერი ზრდა",
-        excerpt: "ეზოთერული ცოდნა ისტორიის მანძილზე ეხმარებოდა ადამიანებს სულიერი განვითარების გზაზე წინსვლაში...",
-        content: "ეზოთერული პრაქტიკები მოიცავს ფართო სპექტრს სულიერი განვითარების ინსტრუმენტებისა: ვიზუალიზაცია, მანტრების განმეორება, ენერგეტიკული სავარჯიშოები, ჩაკრების მუშაობა. ეს პრაქტიკები გვეხმარება დავუკავშირდეთ ჩვენს უმაღლეს თვითს და მივიღოთ სულიერი სიბრძნე.",
-        category: "spirituality",
-        author: "ლევანი ეზოთერიკოსი",
-        authorRole: "სულიერი პრაქტიკების მასწავლებელი",
-        imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
-        publishedAt: new Date("2023-11-10"),
-        featured: false
-      },
-      {
-        title: "2024 წლის ზაფხულის ასტროლოგიური გავლენები",
-        excerpt: "ზაფხული არის ენერგიისა და სიცოცხლისუნარიანობის დრო. ვარსკვლავების მიმდინარე კონფიგურაცია განსაკუთრებულ შესაძლებლობებს ითვალისწინებს...",
-        content: "2024 წლის ზაფხული გამორჩეულია ასტროლოგიური ძლიერი ასპექტებით. მზე კიბოში ღრმა ემოციურ განწმენდას ნიშნავს, ხოლო იუპიტერი ტყუპებში მატერიალურ სტაბილურობას პირდება. ზაფხულის მზე მზის სიმულს განსაკუთრებით ძლიერი ენერგია იქნება სიყვარულისა და კრეატიულობისთვის.",
-        category: "horoscope",
-        author: "ნინო ასტროლოგი",
-        authorRole: "პროფესიონალი ასტროლოგი",
-        imageUrl: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
-        publishedAt: new Date("2024-06-15"),
-        featured: true
-      },
-      {
-        title: "ღრმა მედიტაციური სტანები და მათი მიღწევის გზები",
-        excerpt: "მედიტაციის ღრმა სტანები ეხმარება პრაქტიკანტს მიაღწიოს შინაგან მშვიდობასა და სულიერ ზრდას...",
-        content: "ღრმა მედიტაციური სტანები - ეს არის ცნობიერების განსაკუთრებული მდგომარეობა, როცა გონება მყუდროდება და სული ეუღლება უმაღლეს თვითს. ეს სტანების მისაღწევად საჭიროა რეგულარული პრაქტიკა, სწორი სუნთქვის ტექნიკა და ყურადღების კონცენტრაცია.",
-        category: "meditation",
-        author: "ანა სულიერი მასწავლებელი",
-        authorRole: "მედიტაციის ინსტრუქტორი",
-        imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
-        publishedAt: new Date("2024-06-05"),
-        featured: false
-      },
-      {
-        title: "შემოდგომის ეკვინოქსი და ენერგეტიკული ბალანსი",
-        excerpt: "შემოდგომის ეკვინოქსი არის ბალანსის და ჰარმონიის დრო, როცა დღე და ღამე თანაბრად იყოფა...",
-        content: "შემოდგომის ეკვინოქსი არის ბალანსისა და ჰარმონიის სიმბოლო. ეს არის დრო თანაზომიერებისა და წონასწორობისთვის ცხოვრების ყველა ასპექტში. ამ პერიოდში მნიშვნელოვანია ენერგეტიკული ბალანსის აღდგენა და სულიერი პრაქტიკების გაღრმავება.",
-        category: "spirituality",
-        author: "მაია ენერგოთერაპევტი",
-        authorRole: "სეზონური რიტმების სპეციალისტი",
-        imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
-        publishedAt: new Date("2024-05-20"),
-        featured: true
-      },
-      {
-        title: "დოშებისა და ინდივიდუალური კონსტიტუციის როლი ასტროლოგიაში",
-        excerpt: "აიურვედული დოშები და ასტროლოგიური ტიპები ღრმად კავშირშია. ვატა, პიტა და კაფა დოშები...",
-        content: "აიურვედული სისტემის მიხედვით, ყოველი ადამიანი კონკრეტული კონსტიტუციით იბადება, რომელიც სამი დოშიდან შედგება: ვატა, პიტა და კაფა. ეს დოშები კავშირშია ასტროლოგიურ ელემენტებთან და ეხმარება უკეთ გაიგოთ თქვენი ტემპერამენტი.",
-        category: "horoscope",
-        author: "ნინო ასტროლოგი",
-        authorRole: "ასტრო-აიურვედის სპეციალისტი",
-        imageUrl: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
-        publishedAt: new Date("2024-05-05"),
-        featured: false
+        }
+      ];
+
+      console.log('📰 Seeding articles...');
+      for (const article of articleData) {
+        await db.insert(articles).values(article).onConflictDoNothing();
       }
-    ];
 
-    articleData.forEach(art => {
-      const article: Article = { 
-        ...art, 
-        id: this.currentArticleId++,
-        likes: Math.floor(Math.random() * 50) + 10,
-        comments: Math.floor(Math.random() * 25) + 1,
-        views: Math.floor(Math.random() * 1000) + 100,
-        featured: art.featured || null
-      };
-      this.articles.set(article.id, article);
-    });
-
-    // Seed horoscopes
-    const horoscopeData: InsertHoroscope[] = [
-      {
-        zodiacSign: "leo",
-        zodiacSignGeorgian: "ლომი",
-        content: "დღეს შემოქმედებითი ენერგია განსაკუთრებით ძლიერია. ვარსკვლავები გირჩევენ ახალი პროექტების დაწყებას.",
+      // Seed horoscopes
+      const horoscopeData: InsertHoroscope[] = [
+        {
+          zodiacSign: "aries",
+          zodiacSignGeorgian: "ვერძი",
+          content: "დღეს ვერძებისთვის განსაკუთრებული დღეა ენერგიისა და მოტივაციის თვალსაზრისით. მარსის გავლენით თქვენ იღებთ დამატებით ძალას ახალი პროექტების დასაწყებად.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "taurus",
+          zodiacSignGeorgian: "ხარი",
+          content: "ხრებისთვის დღეს მნიშვნელოვანია სტაბილურობა და განმეორებითი ღონისძიებები. ვენერის დადებითი ასპექტი სიყვარულის სფეროში წარმატებას პირდება.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "gemini",
+          zodiacSignGeorgian: "ტყუპები",
+          content: "ტყუპებისთვის დღეს კომუნიკაცია წინა პლანზეა. მერკურის გავლენით იღებთ ახალ ინფორმაციას რომელიც სასარგებლო იქნება მომავლისთვის.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "cancer",
+          zodiacSignGeorgian: "კანჩხი",
+          content: "კანჩხებისთვის დღეს ემოციური ბალანსი მნიშვნელოვანია. მთვარის ფაზა ხელს უწყობს ოჯახურ ურთიერთობებში ჰარმონიის დამყარებას.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "leo",
+          zodiacSignGeorgian: "ლომი",
+          content: "ლომებისთვის დღეს კრეატიულობა და თვითგამოხატვა წინა პლანზეა. მზის ენერგია მოგცემთ დამატებით ნდობას თქვენს შესაძლებლობებში.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "virgo",
+          zodiacSignGeorgian: "ქალწული",
+          content: "ქალწულებისთვის დღეს დეტალებზე ყურადღება და სისტემატურობა მნიშვნელოვანია. თქვენი ანალიტიკური უნარები განსაკუთრებით მოქმედია.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "libra",
+          zodiacSignGeorgian: "სასწორი",
+          content: "სასწორებისთვის დღეს ბალანსი და ჰარმონია მნიშვნელოვანია. ვენერის გავლენით პარტნიორობაში ახალი შესაძლებლობები იხსნება.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "scorpio",
+          zodiacSignGeorgian: "მორიელი",
+          content: "მორიელებისთვის დღეს ღრმა ინტუიცია და სულიერი ზრდა წინა პლანზეა. პლუტონის ენერგია ტრანსფორმაციის პროცესს აყენებს.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "sagittarius",
+          zodiacSignGeorgian: "მშვილდოსანი",
+          content: "მშვილდოსნებისთვის დღეს ახალი შესაძლებლობები და თავგადასავალი წინა პლანზეა. იუპიტერის გავლენით გაფართოების პერსპექტივები იხსნება.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "capricorn",
+          zodiacSignGeorgian: "ღორი",
+          content: "ღორებისთვის დღეს პრაქტიკული საკითხები და კარიერული წინსვლა მნიშვნელოვანია. სატურნის გავლენით დისციპლინა გამოგადგებათ.",
+          date: new Date()
+        },
+        {
+          zodiacSign: "aquarius",
+          zodiacSignGeorgian: "წყალმცოცავი",
+          content: "წყალმცოცავებისთვის დღეს ინოვაციები და ახალი იდეები წინა პლანზეა. ურანის ენერგია არასტანდარტულ გადაწყვეტილებებს ხელს უწყობს.",
         date: new Date()
       },
       {
-        zodiacSign: "aries",
-        zodiacSignGeorgian: "ვერძი",
-        content: "თქვენი ენერგია დღეს შეუდარებელია. სამუშაო პროექტებში დიდი წარმატება გელოდებათ.",
+          zodiacSign: "pisces",
+          zodiacSignGeorgian: "თევზები",
+          content: "თევზებისთვის დღეს ინტუიცია და სულიერი ზრდა განსაკუთრებით მნიშვნელოვანია. ნეპტუნის გავლენით კრეატიული ენერგია იზრდება.",
         date: new Date()
       }
     ];
 
-    horoscopeData.forEach(hor => {
-      const horoscope: Horoscope = { ...hor, id: this.currentHoroscopeId++ };
-      this.horoscopes.set(horoscope.zodiacSign, horoscope);
-    });
+      console.log('🔮 Seeding horoscopes...');
+      for (const horoscope of horoscopeData) {
+        await db.insert(horoscopes).values(horoscope).onConflictDoNothing();
+      }
+
+      // Initialize realistic view counts for historical articles
+      console.log('📊 Initializing historical view counts...');
+      await this.initializeHistoricalViewCounts();
+
+      console.log('✅ Database seeding completed successfully');
+    } catch (error) {
+      console.error('❌ Error seeding database:', error);
+      throw error;
+    }
+  }
+
+  async initializeHistoricalViewCounts(): Promise<void> {
+    try {
+      // Set realistic view counts based on article age and popularity
+      const historicalViewData = [
+        { id: 1, views: 2847, likes: 156 }, // Featured horoscope article
+        { id: 2, views: 1923, likes: 84 },  // Crystals article
+        { id: 3, views: 1456, likes: 67 },  // Moon phases article  
+        { id: 4, views: 1122, likes: 45 },  // Meditation article
+        { id: 5, views: 1678, likes: 89 }   // Featured spirituality article
+      ];
+
+      for (const viewData of historicalViewData) {
+        await db.update(articles)
+          .set({ 
+            views: viewData.views,
+            likes: viewData.likes 
+          })
+          .where(eq(articles.id, viewData.id));
+      }
+
+      console.log('📊 Historical view counts initialized successfully');
+    } catch (error) {
+      console.error('❌ Error initializing historical view counts:', error);
+      // Don't throw error for view count initialization as it's not critical
+    }
   }
 
   async getArticles(limit = 10, offset = 0, category?: string, featured?: boolean): Promise<Article[]> {
-    let articlesArray = Array.from(this.articles.values());
+    try {
+      let query = db.select().from(articles);
     
+      const conditions = [];
     if (category) {
-      articlesArray = articlesArray.filter(article => article.category === category);
+        conditions.push(eq(articles.category, category));
+      }
+      if (featured !== undefined) {
+        conditions.push(eq(articles.featured, featured));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      return await query
+        .orderBy(desc(articles.publishedAt))
+        .limit(limit)
+        .offset(offset);
+    } catch (error) {
+      console.error('❌ Error fetching articles:', error);
+      throw new Error('Failed to fetch articles');
     }
-    
-    if (featured !== undefined) {
-      articlesArray = articlesArray.filter(article => article.featured === featured);
-    }
-    
-    return articlesArray
-      .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
-      .slice(offset, offset + limit);
   }
 
   async getArticle(id: number): Promise<Article | undefined> {
-    return this.articles.get(id);
+    try {
+      const result = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
+      return result[0];
+    } catch (error) {
+      console.error(`❌ Error fetching article ${id}:`, error);
+      throw new Error('Failed to fetch article');
+    }
   }
 
   async createArticle(insertArticle: InsertArticle): Promise<Article> {
-    const article: Article = {
-      ...insertArticle,
-      id: this.currentArticleId++,
-      likes: 0,
-      comments: 0,
-      views: 0,
-      featured: insertArticle.featured || null,
-      publishedAt: insertArticle.publishedAt || new Date()
-    };
-    this.articles.set(article.id, article);
-    return article;
+    try {
+      const result = await db.insert(articles).values(insertArticle).returning();
+      return result[0];
+    } catch (error) {
+      console.error('❌ Error creating article:', error);
+      throw new Error('Failed to create article');
+    }
   }
 
   async updateArticleViews(id: number): Promise<void> {
-    const article = this.articles.get(id);
-    if (article) {
-      article.views = (article.views || 0) + 1;
-      this.articles.set(id, article);
+    try {
+      await db.update(articles)
+        .set({ views: sql`${articles.views} + 1` })
+        .where(eq(articles.id, id));
+    } catch (error) {
+      console.error(`❌ Error updating article views for ${id}:`, error);
+      // Don't throw error for view updates as it's not critical
     }
   }
 
   async searchArticles(query: string): Promise<Article[]> {
-    const lowerQuery = query.toLowerCase();
-    return Array.from(this.articles.values())
-      .filter(article => 
-        article.title.toLowerCase().includes(lowerQuery) ||
-        article.excerpt.toLowerCase().includes(lowerQuery) ||
-        article.content.toLowerCase().includes(lowerQuery)
-      )
-      .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
+    try {
+      const searchTerm = `%${query}%`;
+      return await db.select().from(articles)
+        .where(
+          or(
+            like(articles.title, searchTerm),
+            like(articles.excerpt, searchTerm),
+            like(articles.content, searchTerm)
+          )
+        )
+        .orderBy(desc(articles.publishedAt))
+        .limit(20);
+    } catch (error) {
+      console.error('❌ Error searching articles:', error);
+      throw new Error('Failed to search articles');
+    }
   }
 
   async getPopularArticles(limit = 5): Promise<Article[]> {
-    return Array.from(this.articles.values())
-      .sort((a, b) => (b.views || 0) - (a.views || 0))
-      .slice(0, limit);
+    try {
+      return await db.select().from(articles)
+        .orderBy(desc(articles.views), desc(articles.likes))
+        .limit(limit);
+    } catch (error) {
+      console.error('❌ Error fetching popular articles:', error);
+      throw new Error('Failed to fetch popular articles');
+    }
   }
 
   async getCategories(): Promise<Category[]> {
-    return Array.from(this.categories.values());
+    try {
+      return await db.select().from(categories).orderBy(categories.name);
+    } catch (error) {
+      console.error('❌ Error fetching categories:', error);
+      throw new Error('Failed to fetch categories');
+    }
   }
 
   async getCategory(name: string): Promise<Category | undefined> {
-    return this.categories.get(name);
+    try {
+      const result = await db.select().from(categories).where(eq(categories.name, name)).limit(1);
+      return result[0];
+    } catch (error) {
+      console.error(`❌ Error fetching category ${name}:`, error);
+      throw new Error('Failed to fetch category');
+    }
   }
 
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
-    const category: Category = {
-      ...insertCategory,
-      id: this.currentCategoryId++,
-      description: insertCategory.description || null
-    };
-    this.categories.set(category.name, category);
-    return category;
+    try {
+      const result = await db.insert(categories).values(insertCategory).returning();
+      return result[0];
+    } catch (error) {
+      console.error('❌ Error creating category:', error);
+      throw new Error('Failed to create category');
+    }
+  }
+
+  async getAllHoroscopes(): Promise<Horoscope[]> {
+    try {
+      const result = await db.select().from(horoscopes).orderBy(horoscopes.zodiacSign);
+      return result;
+    } catch (error) {
+      console.error('❌ Error fetching all horoscopes:', error);
+      throw new Error('Failed to fetch horoscopes');
+    }
   }
 
   async getDailyHoroscope(zodiacSign: string): Promise<Horoscope | undefined> {
-    return this.horoscopes.get(zodiacSign);
+    try {
+      // For simplicity, just get the latest horoscope for the zodiac sign
+      // In a real app, you'd want proper date-based filtering
+      const result = await db.select().from(horoscopes)
+        .where(eq(horoscopes.zodiacSign, zodiacSign))
+        .orderBy(desc(horoscopes.date))
+        .limit(1);
+      
+      return result[0];
+    } catch (error) {
+      console.error(`❌ Error fetching horoscope for ${zodiacSign}:`, error);
+      throw new Error('Failed to fetch horoscope');
+    }
   }
 
   async createHoroscope(insertHoroscope: InsertHoroscope): Promise<Horoscope> {
-    const horoscope: Horoscope = {
-      ...insertHoroscope,
-      id: this.currentHoroscopeId++,
-    };
-    this.horoscopes.set(horoscope.zodiacSign, horoscope);
-    return horoscope;
+    try {
+      const result = await db.insert(horoscopes).values(insertHoroscope).returning();
+      return result[0];
+    } catch (error) {
+      console.error('❌ Error creating horoscope:', error);
+      throw new Error('Failed to create horoscope');
+    }
   }
 
   async updateArticle(id: number, updates: Partial<InsertArticle>): Promise<Article | undefined> {
-    const article = this.articles.get(id);
-    if (!article) return undefined;
-    
-    const updatedArticle: Article = {
-      ...article,
-      ...updates,
-      featured: updates.featured !== undefined ? updates.featured : article.featured
-    };
-    this.articles.set(id, updatedArticle);
-    return updatedArticle;
+    try {
+      const result = await db.update(articles)
+        .set(updates)
+        .where(eq(articles.id, id))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error(`❌ Error updating article ${id}:`, error);
+      throw new Error('Failed to update article');
+    }
   }
 
   async deleteArticle(id: number): Promise<boolean> {
-    return this.articles.delete(id);
+    try {
+      const result = await db.delete(articles).where(eq(articles.id, id)).returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error(`❌ Error deleting article ${id}:`, error);
+      throw new Error('Failed to delete article');
+    }
   }
 
   async getAllUsers(): Promise<any[]> {
+    try {
+      // For now, return mock data since we don't have a users table yet
+      // This would be replaced with actual user queries when authentication is fully implemented
     return [
-      { id: 1, username: 'admin', email: 'admin@mnatobi.ge', role: 'admin', createdAt: new Date('2024-01-01') },
-      { id: 2, username: 'editor', email: 'editor@mnatobi.ge', role: 'editor', createdAt: new Date('2024-01-15') }
+        { id: 1, username: 'admin', email: 'admin@astrologyinsights.ge', role: 'admin', createdAt: new Date() },
+        { id: 2, username: 'editor', email: 'editor@astrologyinsights.ge', role: 'editor', createdAt: new Date() }
     ];
+    } catch (error) {
+      console.error('❌ Error fetching users:', error);
+      throw new Error('Failed to fetch users');
+    }
   }
 
   async createUser(user: { username: string; email: string; role: string }): Promise<any> {
+    try {
+      // Mock user creation - would be replaced with actual database insert
     const newUser = {
-      id: Math.floor(Math.random() * 1000) + 100,
+        id: Date.now(),
       ...user,
       createdAt: new Date()
     };
+      console.log('👤 User created (mock):', newUser);
     return newUser;
+    } catch (error) {
+      console.error('❌ Error creating user:', error);
+      throw new Error('Failed to create user');
+    }
+  }
+
+  async getViewStatistics(): Promise<{ totalViews: number; totalLikes: number; totalArticles: number }> {
+    try {
+      const result = await db.select({
+        totalViews: sql<number>`sum(${articles.views})`,
+        totalLikes: sql<number>`sum(${articles.likes})`,
+        totalArticles: sql<number>`count(${articles.id})`
+      }).from(articles);
+
+      return {
+        totalViews: result[0]?.totalViews || 0,
+        totalLikes: result[0]?.totalLikes || 0,
+        totalArticles: result[0]?.totalArticles || 0
+      };
+    } catch (error) {
+      console.error('❌ Error fetching view statistics:', error);
+      throw new Error('Failed to fetch view statistics');
+    }
   }
 }
 
-export const storage = new MemStorage();
+// Export singleton instance
+export const storage = new DatabaseStorage();

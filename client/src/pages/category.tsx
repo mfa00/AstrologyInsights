@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import { ArrowLeft } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Header from "@/components/layout/header";
@@ -17,10 +17,12 @@ export default function CategoryPage() {
     enabled: !!categoryName,
   });
 
-  const { data: articles, isLoading: articlesLoading } = useQuery<Article[]>({
+  const { data: articlesResponse, isLoading: articlesLoading } = useQuery<{success: boolean, data: Article[]}>({
     queryKey: [`/api/articles?category=${categoryName}&limit=20`],
     enabled: !!categoryName,
   });
+
+  const articles = articlesResponse?.data || [];
 
   return (
     <div className="min-h-screen hero-bg">
@@ -31,12 +33,7 @@ export default function CategoryPage() {
         <section className="py-20 relative overflow-hidden">
           <div className="container mx-auto px-6 relative z-10">
             <div className="max-w-5xl mx-auto text-center">
-              <Link href="/">
-                <Button variant="outline" size="sm" className="mb-8 elegant-shadow">
-                  <ArrowLeft className="mr-2 w-4 h-4" />
-                  უკან დაბრუნება
-                </Button>
-              </Link>
+
               
               {categoryLoading ? (
                 <Skeleton className="h-16 w-80 mx-auto mb-6" />
@@ -87,7 +84,7 @@ export default function CategoryPage() {
                     <p className="sky-text text-lg mb-10 leading-relaxed">ამ კატეგორიაში ჯერ არ არის დამატებული სტატიები.</p>
                     <Link href="/">
                       <Button size="lg" className="bg-gradient-to-r from-sky-blue to-deep-sky text-white elegant-shadow">
-                        უკან დაბრუნება
+                        მთავარი გვერდი
                       </Button>
                     </Link>
                   </div>

@@ -7,9 +7,11 @@ import { Flame } from "lucide-react";
 import type { Article } from "@shared/schema";
 
 export default function PopularArticles() {
-  const { data: articles, isLoading } = useQuery<Article[]>({
+  const { data: articlesResponse, isLoading } = useQuery<{success: boolean, data: Article[]}>({
     queryKey: ["/api/articles/popular?limit=3"],
   });
+
+  const articles = articlesResponse?.data || [];
 
   return (
     <Card className="article-card">
