@@ -1,17 +1,21 @@
 import { eq, desc, like, or, sql, and } from 'drizzle-orm';
 import { db } from './db';
-import { articles, categories, horoscopes, type Article, type InsertArticle, type Category, type InsertCategory, type Horoscope, type InsertHoroscope } from "@shared/schema";
+import { articles, categories, horoscopes, articleViews, type Article, type InsertArticle, type Category, type InsertCategory, type Horoscope, type InsertHoroscope, type ArticleView, type InsertArticleView } from "@shared/schema";
 
 export interface IStorage {
   // Articles
   getArticles(limit?: number, offset?: number, category?: string, featured?: boolean): Promise<Article[]>;
   getArticle(id: number): Promise<Article | undefined>;
   createArticle(article: InsertArticle): Promise<Article>;
-  updateArticleViews(id: number): Promise<void>;
+  updateArticleViews(id: number, sessionId: string, ipAddress?: string, userAgent?: string): Promise<boolean>;
   searchArticles(query: string): Promise<Article[]>;
   getPopularArticles(limit?: number): Promise<Article[]>;
   updateArticle(id: number, article: Partial<InsertArticle>): Promise<Article | undefined>;
   deleteArticle(id: number): Promise<boolean>;
+  
+  // View tracking
+  hasViewedArticle(articleId: number, sessionId: string): Promise<boolean>;
+  recordArticleView(view: InsertArticleView): Promise<void>;
   
   // Categories
   getCategories(): Promise<Category[]>;
@@ -300,14 +304,34 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateArticleViews(id: number): Promise<void> {
+  async updateArticleViews(id: number, sessionId: string, ipAddress?: string, userAgent?: string): Promise<boolean> {
     try {
+      // First check if this session has already viewed this article
+      const hasViewed = await this.hasViewedArticle(id, sessionId);
+      if (hasViewed) {
+        console.log(`🔍 Session ${sessionId} has already viewed article ${id}, skipping view count`);
+        return false; // View not counted as it's duplicate
+      }
+
+      // Record the view in the tracking table
+      await this.recordArticleView({
+        articleId: id,
+        sessionId,
+        ipAddress,
+        userAgent
+      });
+
+      // Increment the view count in the articles table
       await db.update(articles)
         .set({ views: sql`${articles.views} + 1` })
         .where(eq(articles.id, id));
+
+      console.log(`📊 New view recorded for article ${id} from session ${sessionId}`);
+      return true; // View was successfully counted
     } catch (error) {
       console.error(`❌ Error updating article views for ${id}:`, error);
       // Don't throw error for view updates as it's not critical
+      return false;
     }
   }
 
@@ -475,6 +499,29 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('❌ Error fetching view statistics:', error);
       throw new Error('Failed to fetch view statistics');
+    }
+  }
+
+  async hasViewedArticle(articleId: number, sessionId: string): Promise<boolean> {
+    try {
+      const result = await db.select().from(articleViews)
+        .where(and(
+          eq(articleViews.articleId, articleId),
+          eq(articleViews.sessionId, sessionId)
+        ));
+      return result.length > 0;
+    } catch (error) {
+      console.error(`❌ Error checking if article ${articleId} has been viewed by session ${sessionId}:`, error);
+      throw new Error('Failed to check if article has been viewed');
+    }
+  }
+
+  async recordArticleView(view: InsertArticleView): Promise<void> {
+    try {
+      await db.insert(articleViews).values(view).onConflictDoNothing();
+    } catch (error) {
+      console.error('❌ Error recording article view:', error);
+      throw new Error('Failed to record article view');
     }
   }
 }
