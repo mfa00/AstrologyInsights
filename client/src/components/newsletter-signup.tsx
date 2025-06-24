@@ -47,7 +47,7 @@ export default function NewsletterSignup() {
   return (
     <Card className="article-card bg-gradient-to-br from-sky-blue/10 to-light-sky/20 border-sky-blue/30">
       <CardHeader>
-        <CardTitle className="text-xl font-bold sky-blue flex items-center">
+        <CardTitle className="text-xl font-bold title-font sky-blue flex items-center">
           <Mail className="mr-2 w-5 h-5" />
           ასტროლოგიური სიახლეები
         </CardTitle>

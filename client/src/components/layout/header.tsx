@@ -8,9 +8,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const navigation = [
   { name: "მთავარი", href: "/" },
   { name: "ჰოროსკოპი", href: "/category/horoscope" },
-  { name: "ზოდიაქო", href: "/category/zodiac" },
-  { name: "პროგნოზები", href: "/category/predictions" },
-  { name: "ტარო", href: "/category/tarot" }
+  { name: "კრისტალები", href: "/category/crystals" },
+  { name: "სულიერება", href: "/category/spirituality" },
+  { name: "მედიტაცია", href: "/category/meditation" },
+  { name: "ადმინი", href: "/admin" }
 ];
 
 export default function Header() {
@@ -27,7 +28,7 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-pure-white/95 backdrop-blur-sm border-b border-sky-blue/20 shadow-sm">
+    <header className="fixed top-0 w-full z-50 glass-header shadow-sm">
       <div className="container mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
           {/* Logo */}
@@ -37,7 +38,7 @@ export default function Header() {
               alt="მნათობი - ასტროლოგია" 
               className="w-10 h-10 rounded-full sky-glow"
             />
-            <h1 className="text-2xl font-bold sky-blue">მნათობი</h1>
+            <h1 className="text-3xl font-bold title-font gradient-text tracking-wide">მნათობი</h1>
           </Link>
           
           {/* Desktop Navigation */}

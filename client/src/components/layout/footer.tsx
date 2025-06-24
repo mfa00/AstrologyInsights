@@ -3,9 +3,9 @@ import { Mail, Facebook, Instagram, Youtube, Send } from "lucide-react";
 
 const categories = [
   { name: "ჰოროსკოპი", href: "/category/horoscope" },
-  { name: "ზოდიაქოს ნიშნები", href: "/category/zodiac" },
-  { name: "ტაროს კარტები", href: "/category/tarot" },
-  { name: "მთვარის ფაზები", href: "/category/moon-phases" }
+  { name: "კრისტალები", href: "/category/crystals" },
+  { name: "სულიერება", href: "/category/spirituality" },
+  { name: "მედიტაცია", href: "/category/meditation" }
 ];
 
 const services = [
@@ -28,7 +28,7 @@ export default function Footer() {
                 alt="მნათობი" 
                 className="w-8 h-8 rounded-full sky-glow"
               />
-              <h5 className="text-xl font-bold sky-blue">მნათობი</h5>
+              <h5 className="text-2xl font-bold title-font gradient-text">მნათობი</h5>
             </div>
             <p className="sky-text text-sm leading-relaxed">
               ვარსკვლავების ენაზე ვისაუბრებთ და ასტროლოგიის საიდუმლოებებს ვყოფთ ყველასთან.

@@ -14,7 +14,7 @@ export default function PopularArticles() {
   return (
     <Card className="article-card">
       <CardHeader>
-        <CardTitle className="text-xl font-bold sky-blue flex items-center">
+        <CardTitle className="text-xl font-bold title-font sky-blue flex items-center">
           <Flame className="mr-2 w-5 h-5" />
           პოპულარული
         </CardTitle>

@@ -8,6 +8,8 @@ export interface IStorage {
   updateArticleViews(id: number): Promise<void>;
   searchArticles(query: string): Promise<Article[]>;
   getPopularArticles(limit?: number): Promise<Article[]>;
+  updateArticle(id: number, article: Partial<InsertArticle>): Promise<Article | undefined>;
+  deleteArticle(id: number): Promise<boolean>;
   
   // Categories
   getCategories(): Promise<Category[]>;
@@ -17,6 +19,10 @@ export interface IStorage {
   // Horoscopes
   getDailyHoroscope(zodiacSign: string): Promise<Horoscope | undefined>;
   createHoroscope(horoscope: InsertHoroscope): Promise<Horoscope>;
+  
+  // Users (for admin)
+  getAllUsers(): Promise<any[]>;
+  createUser(user: { username: string; email: string; role: string }): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -41,16 +47,19 @@ export class MemStorage implements IStorage {
   private seedData() {
     // Seed categories
     const categoryData: InsertCategory[] = [
-      { name: "horoscope", nameGeorgian: "ჰოროსკოპი", description: "Daily and weekly horoscopes", color: "celestial-gold" },
-      { name: "zodiac", nameGeorgian: "ზოდიაქო", description: "Zodiac signs and their meanings", color: "mystic-purple" },
-      { name: "tarot", nameGeorgian: "ტარო", description: "Tarot card readings and interpretations", color: "lavender" },
-      { name: "crystals", nameGeorgian: "კრისტალები", description: "Healing crystals and their properties", color: "stardust-gold" },
-      { name: "moon-phases", nameGeorgian: "მთვარის ფაზები", description: "Moon phases and their influence", color: "midnight-blue" },
-      { name: "predictions", nameGeorgian: "პროგნოზები", description: "Astrological predictions and forecasts", color: "deep-space" }
+      { name: "horoscope", nameGeorgian: "ჰოროსკოპი", description: "Daily and weekly horoscopes", color: "sky-blue" },
+      { name: "crystals", nameGeorgian: "კრისტალები", description: "Healing crystals and their properties", color: "deep-sky" },
+      { name: "moon-phases", nameGeorgian: "მთვარის ფაზები", description: "Moon phases and their influence", color: "ocean-blue" },
+      { name: "spirituality", nameGeorgian: "სულიერება", description: "Spiritual growth and enlightenment", color: "sky-blue" },
+      { name: "meditation", nameGeorgian: "მედიტაცია", description: "Meditation practices and mindfulness", color: "deep-sky" }
     ];
 
     categoryData.forEach(cat => {
-      const category: Category = { ...cat, id: this.currentCategoryId++ };
+      const category: Category = { 
+        ...cat, 
+        id: this.currentCategoryId++,
+        description: cat.description || null
+      };
       this.categories.set(cat.name, category);
     });
 
@@ -60,29 +69,23 @@ export class MemStorage implements IStorage {
         title: "2024 წლის ასტროლოგიური პროგნოზი - რა გველოდება?",
         excerpt: "ახალი წელი ახალ შესაძლებლობებს მოგვანიჭებს. ასტროლოგიური კონფიგურაციები იმდენად ძლიერია, რომ ყოველი ზოდიაქოს ნიშნისთვის უნიკალური გამოცდილება გათვალისწინებულია...",
         content: "ახალი წელი ახალ შესაძლებლობებს მოგვანიჭებს. ასტროლოგიური კონფიგურაციები იმდენად ძლიერია, რომ ყოველი ზოდიაქოს ნიშნისთვის უნიკალური გამოცდილება გათვალისწინებულია. ამ წელს ვარსკვლავები განსაკუთრებულ ყურადღებას აქცევენ პირად ზრდასა და სულიერ განვითარებას.",
-        category: "predictions",
+        category: "horoscope",
         author: "ნინო ასტროლოგი",
         authorRole: "ასტროლოგი",
         imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400",
         publishedAt: new Date("2024-01-15"),
-        likes: 247,
-        comments: 18,
-        featured: true,
-        views: 1520
+        featured: true
       },
       {
         title: "ტაროს კარტების საიდუმლოებები თქვენთვის",
         excerpt: "ტაროს კარტები ძველი ბრძნულების ცოდნას ატარებს. თითოეული კარტა უნიკალურ ენერგიას ფლობს...",
         content: "ტაროს კარტები ძველი ბრძნულების ცოდნას ატარებს. თითოეული კარტა უნიკალურ ენერგიას ფლობს და სიმბოლურ მესიჯებს გვაწვდის. ტაროს წაკითხვა არ არის მომავლის გაუქმებადი წინასწარმეტყველება, არამედ სულიერი გზამკვლევი.",
-        category: "tarot",
+        category: "spirituality",
         author: "მარიამ ტაროლოგი",
         authorRole: "ტაროლოგი",
         imageUrl: "https://images.unsplash.com/photo-1551009175-8a68da93d5f9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
         publishedAt: new Date("2024-01-12"),
-        likes: 89,
-        comments: 12,
-        featured: false,
-        views: 654
+        featured: false
       },
       {
         title: "მკურნალი კრისტალების ძალა",
@@ -93,10 +96,7 @@ export class MemStorage implements IStorage {
         authorRole: "კრისტალოთერაპევტი",
         imageUrl: "https://images.unsplash.com/photo-1518066000714-58c45f1a2c0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
         publishedAt: new Date("2024-01-10"),
-        likes: 156,
-        comments: 24,
-        featured: false,
-        views: 892
+        featured: false
       },
       {
         title: "მთვარის ფაზები და მათი გავლენა",
@@ -107,29 +107,30 @@ export class MemStorage implements IStorage {
         authorRole: "ლუნოლოგი",
         imageUrl: "https://images.unsplash.com/photo-1518066000714-58c45f1a2c0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
         publishedAt: new Date("2024-01-08"),
-        likes: 203,
-        comments: 31,
-        featured: false,
-        views: 1127
+        featured: false
       },
       {
         title: "ნატალური რუკის ანალიზი",
         excerpt: "ნატალური რუკა თქვენი ცხოვრების გეგმას წარმოადგენს, რომელიც დაბადების მომენტში ჩაიწერა...",
         content: "ნატალური რუკა თქვენი ცხოვრების გეგმას წარმოადგენს, რომელიც დაბადების მომენტში ჩაიწერა. ის გვიჩვენებს ჩვენს უნარებს, გამოწვევებს და საცხოვრებელ მიმართულებებს.",
-        category: "zodiac",
+        category: "meditation",
         author: "ნინო ასტროლოგი",
         authorRole: "ასტროლოგი",
         imageUrl: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
         publishedAt: new Date("2024-01-05"),
-        likes: 178,
-        comments: 19,
-        featured: false,
-        views: 743
+        featured: false
       }
     ];
 
     articleData.forEach(art => {
-      const article: Article = { ...art, id: this.currentArticleId++ };
+      const article: Article = { 
+        ...art, 
+        id: this.currentArticleId++,
+        likes: Math.floor(Math.random() * 50) + 10,
+        comments: Math.floor(Math.random() * 25) + 1,
+        views: Math.floor(Math.random() * 1000) + 100,
+        featured: art.featured || null
+      };
       this.articles.set(article.id, article);
     });
 
@@ -182,6 +183,8 @@ export class MemStorage implements IStorage {
       likes: 0,
       comments: 0,
       views: 0,
+      featured: insertArticle.featured || null,
+      publishedAt: insertArticle.publishedAt || new Date()
     };
     this.articles.set(article.id, article);
     return article;
@@ -224,6 +227,7 @@ export class MemStorage implements IStorage {
     const category: Category = {
       ...insertCategory,
       id: this.currentCategoryId++,
+      description: insertCategory.description || null
     };
     this.categories.set(category.name, category);
     return category;
@@ -240,6 +244,39 @@ export class MemStorage implements IStorage {
     };
     this.horoscopes.set(horoscope.zodiacSign, horoscope);
     return horoscope;
+  }
+
+  async updateArticle(id: number, updates: Partial<InsertArticle>): Promise<Article | undefined> {
+    const article = this.articles.get(id);
+    if (!article) return undefined;
+    
+    const updatedArticle: Article = {
+      ...article,
+      ...updates,
+      featured: updates.featured !== undefined ? updates.featured : article.featured
+    };
+    this.articles.set(id, updatedArticle);
+    return updatedArticle;
+  }
+
+  async deleteArticle(id: number): Promise<boolean> {
+    return this.articles.delete(id);
+  }
+
+  async getAllUsers(): Promise<any[]> {
+    return [
+      { id: 1, username: 'admin', email: 'admin@mnatobi.ge', role: 'admin', createdAt: new Date('2024-01-01') },
+      { id: 2, username: 'editor', email: 'editor@mnatobi.ge', role: 'editor', createdAt: new Date('2024-01-15') }
+    ];
+  }
+
+  async createUser(user: { username: string; email: string; role: string }): Promise<any> {
+    const newUser = {
+      id: Math.floor(Math.random() * 1000) + 100,
+      ...user,
+      createdAt: new Date()
+    };
+    return newUser;
   }
 }
 

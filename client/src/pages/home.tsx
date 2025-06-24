@@ -33,9 +33,9 @@ export default function Home() {
       <Header />
       
       {/* Hero Section */}
-      <section className="pt-20 pb-16 sky-bg">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-4xl mx-auto">
+      <section className="pt-24 pb-20 hero-bg relative overflow-hidden">
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="text-center max-w-5xl mx-auto">
             <div className="mb-8">
               <img 
                 src="https://images.unsplash.com/photo-1502134249126-9f3755a50d78?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=600" 
@@ -44,24 +44,24 @@ export default function Home() {
               />
             </div>
             
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 gradient-text">
-              ასტროლოგიის სამყარო
+            <h2 className="text-6xl md:text-8xl lg:text-9xl font-bold mb-8 gradient-text title-font tracking-tight leading-none">
+              ასტროლოგიის<br />სამყარო
             </h2>
-            <p className="text-xl md:text-2xl sky-text mb-8 leading-relaxed">
-              აღმოაჩინე ვარსკვლავების საიდუმლოებები და შენი ზოდიაქოს ნიშნის ეზოთერული ბუნება
+            <p className="text-xl md:text-2xl lg:text-3xl sky-text mb-12 leading-relaxed font-light max-w-4xl mx-auto">
+              აღმოაჩინე ვარსკვლავების საიდუმლოებები და<br />შენი რუჰანი განვითარების გზა
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Link href="/category/horoscope">
-                <Button className="bg-gradient-to-r from-sky-blue to-deep-sky text-pure-white hover:shadow-lg transition-all duration-300">
-                  <Star className="mr-2 w-4 h-4" />
+                <Button className="bg-gradient-to-r from-sky-blue to-deep-sky text-pure-white hover:shadow-lg transition-all duration-500 px-8 py-4 text-lg rounded-full elegant-shadow">
+                  <Star className="mr-3 w-5 h-5" />
                   დღევანდელი ჰოროსკოპი
                 </Button>
               </Link>
-              <Link href="/category/zodiac">
-                <Button variant="outline" className="border-2 border-sky-blue text-sky-blue hover:bg-sky-blue hover:text-pure-white transition-all duration-300">
-                  <Moon className="mr-2 w-4 h-4" />
-                  ზოდიაქოს რუკა
+              <Link href="/category/spirituality">
+                <Button variant="outline" className="border-2 border-sky-blue text-sky-blue hover:bg-sky-blue hover:text-pure-white transition-all duration-500 px-8 py-4 text-lg rounded-full">
+                  <Moon className="mr-3 w-5 h-5" />
+                  სულიერი განვითარება
                 </Button>
               </Link>
             </div>
@@ -70,15 +70,16 @@ export default function Home() {
       </section>
 
       {/* Main Content */}
-      <main className="py-16 bg-pure-white">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-3 gap-12">
+      <main className="py-20 bg-pure-white">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-3 gap-16">
             
             {/* Articles Section */}
             <div className="lg:col-span-2">
-              <div className="mb-12">
-                <h3 className="text-3xl font-bold sky-blue mb-2">განსაკუთრებული სტატიები</h3>
-                <div className="w-20 h-1 bg-gradient-to-r from-sky-blue to-deep-sky rounded-full"></div>
+              <div className="mb-16">
+                <h3 className="text-4xl md:text-5xl font-bold title-font gradient-text mb-4 tracking-tight">განსაკუთრებული სტატიები</h3>
+                <div className="w-24 h-1.5 bg-gradient-to-r from-sky-blue to-deep-sky rounded-full"></div>
+                <p className="text-lg sky-text mt-4 font-light">აღმოაჩინე ასტროლოგიის ღრმა სიბრძნე</p>
               </div>
               
               {/* Featured Article */}
@@ -121,7 +122,7 @@ export default function Home() {
                 </div>
               ) : articles && articles.length > 0 ? (
                 <>
-                  <div className="grid md:grid-cols-2 gap-6 mb-12">
+                  <div className="grid md:grid-cols-2 gap-8 mb-16">
                     {articles.map((article) => (
                       <ArticleCard key={article.id} article={article} />
                     ))}
@@ -146,7 +147,7 @@ export default function Home() {
             </div>
             
             {/* Sidebar */}
-            <aside className="lg:col-span-1 space-y-8">
+            <aside className="lg:col-span-1 space-y-10">
               <ZodiacSelector />
               <PopularArticles />
               <NewsletterSignup />

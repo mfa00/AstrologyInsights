@@ -97,11 +97,13 @@ The application uses three main tables:
 3. Backend bundle output to `dist/index.js`
 4. `npm run start`: Runs production server
 
-## Changelog
-```
-Changelog:
-- June 24, 2025. Initial setup
-```
+## Recent Changes
+- **June 24, 2025**: Enhanced theme with sophisticated typography using Playfair Display and Inter fonts
+- **June 24, 2025**: Removed Georgian categories "ტარო", "პროგნოზი", "ზოდიაქო" as requested
+- **June 24, 2025**: Implemented complete admin panel with article and user management
+- **June 24, 2025**: Added database integration with PostgreSQL support
+- **June 24, 2025**: Upgraded design with advanced glassmorphism effects and improved spacing
+- **June 24, 2025**: Created sophisticated white background with sky blue accent theme
 
 ## User Preferences
 
