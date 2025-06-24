@@ -1,8 +1,8 @@
 [Unit]
 Description=Astrology Insights Node.js Application
 Documentation=https://github.com/your-repo/astrologyinsights
-After=network.target postgresql.service
-Requires=postgresql.service
+After=network.target
+Wants=network.target
 
 [Service]
 Type=simple
