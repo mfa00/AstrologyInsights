@@ -260,10 +260,8 @@ export class DatabaseStorage implements IStorage {
 
   async getArticles(limit = 10, offset = 0, category?: string, featured?: boolean): Promise<Article[]> {
     try {
-      let query = db.select().from(articles);
-    
       const conditions = [];
-    if (category) {
+      if (category) {
         conditions.push(eq(articles.category, category));
       }
       if (featured !== undefined) {
@@ -271,13 +269,17 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        return await db.select().from(articles)
+          .where(and(...conditions))
+          .orderBy(desc(articles.publishedAt))
+          .limit(limit)
+          .offset(offset);
+      } else {
+        return await db.select().from(articles)
+          .orderBy(desc(articles.publishedAt))
+          .limit(limit)
+          .offset(offset);
       }
-      
-      return await query
-        .orderBy(desc(articles.publishedAt))
-        .limit(limit)
-        .offset(offset);
     } catch (error) {
       console.error('❌ Error fetching articles:', error);
       throw new Error('Failed to fetch articles');
